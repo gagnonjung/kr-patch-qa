@@ -1,0 +1,19 @@
+{
+  "name": "kr-patch-qa",
+  "version": "1.1.0",
+  "description": "레트로 게임 한글화 프로젝트의 한국어 QA, 바이너리/런타임 안전 검증, RC·캐노니컬·배포 판정을 위한 Agent Skill.",
+  "author": {
+    "name": "GagnonJung"
+  },
+  "homepage": "https://github.com/gagnonjung/kr-patch-qa",
+  "keywords": [
+    "korean",
+    "hangul",
+    "localization",
+    "qa",
+    "fan-translation",
+    "rom-hacking",
+    "runtime-safety",
+    "regression-testing"
+  ]
+}

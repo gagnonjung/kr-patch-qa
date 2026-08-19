@@ -1,0 +1,42 @@
+{
+  "name": "kr-patch-qa",
+  "version": "1.1.0",
+  "description": "레트로 게임 한글화 프로젝트의 한국어 QA, 바이너리/런타임 안전 검증, RC·캐노니컬·배포 판정을 위한 Agent Skill.",
+  "author": {
+    "name": "GagnonJung",
+    "url": "https://github.com/gagnonjung"
+  },
+  "homepage": "https://github.com/gagnonjung/kr-patch-qa",
+  "repository": "https://github.com/gagnonjung/kr-patch-qa",
+  "keywords": [
+    "korean",
+    "hangul",
+    "localization",
+    "qa",
+    "fan-translation",
+    "rom-hacking",
+    "runtime-safety",
+    "regression-testing"
+  ],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "KR Patch QA",
+    "shortDescription": "Korean localization QA and runtime-safety gates",
+    "longDescription": "Shared Korean retro-game localization QA rules covering language quality, glyph and binary safety, final-image readback, runtime regression testing, canonical promotion, and release gating.",
+    "developerName": "GagnonJung",
+    "category": "Developer Tools",
+    "capabilities": [
+      "Interactive",
+      "Read",
+      "Write"
+    ],
+    "websiteURL": "https://github.com/gagnonjung/kr-patch-qa",
+    "defaultPrompt": [
+      "한글화 QA 스킬 적용해줘.",
+      "이 한글 패치 RC를 공통 QA 기준으로 검증해줘.",
+      "프리징 회귀를 한글화 QA 규약에 따라 분리해줘."
+    ],
+    "brandColor": "#355E3B",
+    "screenshots": []
+  }
+}

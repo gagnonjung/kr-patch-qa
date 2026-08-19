@@ -1,8 +1,8 @@
 # Game Localization Common QA & Runtime Safety Standard
 
-Version: 1.0
+Version: 1.1
 Updated: 2026-08-19
-Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
+Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 이 문서는 플랫폼·게임별 세부 규칙보다 상위에 두는 **공통 QA / 바이너리 안전 / 런타임 회귀 방지 규약**이다.
 각 프로젝트의 `HANDOFF.md`, `WORKLOG.md`, `.ai-bridge/current-plan.md`, 프로젝트별 `AGENTS.md`는 이 문서를 기본 규약으로 참조한다.
@@ -35,6 +35,11 @@ Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
    - 이미 런타임 PASS한 데이터의 포맷·크기·오프셋·해시를 불필요하게 재생성하지 않는다.
    - unrelated 파일을 broad rebuild / broad stage / broad replace하지 않는다.
 
+6. **지원 리비전을 해시로 고정한다.**
+   - 지원하는 원본 ROM/ISO/BIN/CUE/archive의 MD5/SHA-256 또는 동등한 강한 식별값을 기록한다.
+   - 입력 해시가 다르면 “같은 게임이니 구조도 같을 것”이라고 추정해 계속 진행하지 않는다.
+   - 다른 리비전을 지원하려면 포인터·파일 배치·압축·실행 파일·아카이브 구조 등 현재 변경 경계가 동일하다는 별도 근거를 만든다.
+
 ---
 
 ## 2. 번역 원문과 참고 자료의 우선순위
@@ -56,6 +61,29 @@ Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
 - OCR이나 추측으로 번역하지 않는다.
 - 바이너리 원문, 실제 화면, 다른 중복 소비자, 대사집을 교차 확인한다.
 - 확정되지 않으면 `미확인` 플래그를 남긴다.
+
+### 2.3 사람이 편집하는 번역 원본과 게임 소비 바이트
+
+가능하면 다음을 별도 계층으로 유지한다.
+
+- 사람이 읽고 수정하는 UTF-8 번역 원본
+- 원문·화자·장면·레코드 ID·제어 토큰 등 검증 메타데이터
+- 게임의 실제 인코딩/패킹 형식으로 변환된 확정 빌드 입력
+
+`original`, entry id, control field처럼 구조를 식별하는 값은 번역문과 같은 편집 대상으로 취급하지 않는다.
+게임 소비 바이트가 수동 보정이나 특수 변환을 포함한다면 어떤 사람이 읽는 원본에서 어떤 검증된 변환을 거쳐 만들어졌는지 추적 가능해야 한다.
+
+### 2.4 디코더/추출 규칙이 바뀌었을 때
+
+기존 추출 규칙이 틀렸다고 밝혀지면 잘못 추출된 텍스트를 수동으로 덧대어 계속 쓰지 않는다.
+
+1. 불변 원본에서 새 규칙으로 전체 대상 모집단을 다시 추출한다.
+2. 기존 번역은 stable entry/message ID 또는 검증된 대응 관계로 새 원문에 이관한다.
+3. 원문이 달라진 항목과 번역 재검토가 필요한 항목을 별도 audit으로 남긴다.
+4. 재추출 후 전체 모집단 수, 누락/추가 엔트리, 제어 토큰을 다시 검증한다.
+5. 같은 입력으로 재실행했을 때 추가 변경 0이 되는 idempotent 상태를 확인한다.
+
+추출기가 “대부분 맞는다”는 이유로 이미 알려진 잘못된 디코딩을 canonical 입력으로 유지하지 않는다.
 
 ---
 
@@ -149,6 +177,15 @@ Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
 
 4. 자동 줄바꿈은 후보 생성용이다. 최종 개행은 문맥과 실제 화면을 기준으로 승인한다.
 
+### 5.1 보호 토큰과 제어코드
+
+번역문에 포함된 비텍스트 토큰은 일반 문자와 별도 계약으로 취급한다.
+
+- 색상, 버튼, 속도, 대기, 음성/타이밍, 동적 치환, 페이지/종단 등 보호 토큰의 종류·순서·개수는 원문과 동일해야 한다.
+- 줄바꿈 토큰은 한국어 레이아웃을 위해 이동할 수 있는 경우에도 다른 보호 토큰을 넘어 재배치하지 않는다.
+- 동적 치환 토큰의 실제 표시 폭을 모르면 정적 추정만으로 레이아웃 PASS를 확정하지 않는다.
+- 컴파일러/빌더는 가능한 경우 보호 토큰 불일치를 release-blocking failure로 처리한다.
+
 ---
 
 ## 6. 폰트·글리프 QA
@@ -168,6 +205,13 @@ Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
    - missing index / missing character
    - font/plan/map SHA-256
 6. **missing glyph = 0**을 배포 조건으로 한다.
+7. 화면/스테이지/모듈별 subset font를 쓰는 게임에서는 **주소 가능한 glyph slot ceiling**과 **폰트 blob의 물리 tile 수**를 별도 한계로 추적한다.
+   - 물리 blob에 타일을 추가할 수 있어도 런타임 로더가 그 타일까지 업로드/참조할 수 있다는 증거가 없으면 capacity가 늘었다고 판정하지 않는다.
+   - 반대로 주소 가능한 슬롯이 남아 있어도 해당 화면이 실제로 로드하는 font blob이 짧으면 물리 타일 부족이 별도 blocker가 될 수 있다.
+8. 같은 글리프/폰트가 여러 컨테이너에 복제되어 있으면 시각적으로 닮은 파일 하나만 수정하지 않는다.
+   - 실제 화면/VRAM/RAM 캡처의 바이트나 런타임 로드 경로로 진짜 소비 자산을 확인한다.
+   - 공유 슬롯을 다른 화면도 사용하는 경우 해당 consumer 전체의 문자 집합을 합쳐 충돌 여부를 검사한다.
+   - 한 화면에서만 성공하는 isolated test용 slot reuse는 다른 consumer를 깨뜨릴 수 있으므로 release 근거로 사용하지 않는다.
 
 ---
 
@@ -191,6 +235,10 @@ Scope: `D:\Game - Localizing` 아래의 모든 게임 한글화 프로젝트
 3. 그래픽 하나를 바꾸면서 같은 컨테이너의 비대상 엔트리를 재인코딩하지 않는다.
 4. 변경하지 않은 엔트리는 가능하면 byte-identical을 유지한다.
 5. 작은 로고/로딩 로고/타이틀 변형처럼 비슷한 중복 자산도 전수 조사한다.
+6. `4bpp`라서 항상 `0..15` 전 인덱스를 안전하게 쓸 수 있다고 가정하지 않는다.
+   - 자산별 실제 opaque/transparent index 범위와 CLUT ramp를 원본에서 확인한다.
+   - 유효하지 않은 인덱스가 투명/예약 상태라면 재양자화 시 해당 인덱스를 사용하지 않는다.
+7. 여러 상태(normal/selected/disabled 등)가 같은 atlas나 palette를 공유하면 한 상태만 보고 palette-safe라고 판정하지 않는다.
 
 ---
 
@@ -270,6 +318,13 @@ GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 
 
 가능하면 **고정 FST/LBA 위치에서 내용만 교체**한다.
 
+Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스트리밍 계약인 자산은 일반 ISO 재빌드 성공만으로 안전하다고 판정하지 않는다.
+
+- same-size 교체가 가능하면 원본 sector 위치와 subheader/form 구조를 유지하는 in-place 패치를 우선 검토한다.
+- XA/STR 등 interleaved stream은 sector count, channel/file number, coding info, subheader, EDC/ECC 등 실제 소비 필드를 검증한다.
+- 한 채널/구간만 바꿀 때 다른 sector/stream이 byte-identical 또는 decoded-equivalent인지 확인한다.
+- 재빌드 이미지가 부팅되더라도 해당 스트리밍 구간에서 stall/desync가 발생하면 물리 레이아웃 FAIL로 취급한다.
+
 ## 8.6 엔디언·정수 폭
 
 - 16/24/32-bit 값을 추측으로 쓰지 않는다.
@@ -320,6 +375,22 @@ GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 
 순으로 한다.
 
 검증 중 실패한 `.partial`을 정상 RC로 취급하지 않는다.
+
+## 8.10 단일 주 빌드 경로
+
+최종 배포 산출물은 가능하면 하나의 canonical pipeline/entry point에서 만든다.
+
+그 경로는 최소한 다음을 연결한다.
+
+1. 지원 원본 리비전/해시 확인
+2. 수정 대상 모집단과 구조 검증
+3. 승인된 번역·그래픽·바이너리 변경 적용
+4. 슬롯·포인터·오프셋·압축·정렬·크기 검증
+5. 최종 아카이브/ROM/디스크 이미지 직렬화
+6. 최종 이미지 readback과 기준선/보호 영역 검증
+
+여러 독립 도구의 부분 성공을 합산해 최종 빌드 PASS로 판정하지 않는다.
+개별 재작업 경로가 있더라도 최종 후보는 주 빌드 경로로 다시 통합해 검증한다.
 
 ---
 
@@ -485,6 +556,8 @@ GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 
 4. 중요한 런타임 PASS 시점은 checkpoint commit으로 남기는 것을 권장한다.
 5. 커밋/푸시는 사용자가 요청하거나 프로젝트 규칙이 명시한 경우에만 수행한다.
 6. 최종 빌드에 필요 없는 오래된 RC는 삭제할 수 있으나, 현재 canonical과 마지막 비교 기준은 보존한다.
+7. 공개 저장소에는 원본 ROM/ISO/디스크 이미지, 패치된 전체 이미지, 원본에서 통째로 추출한 저작 자산, 생성된 게임 실행 파일을 기본적으로 포함하지 않는다.
+8. 공개 저장소에는 번역 원본/메타데이터, 소스 형태의 툴체인, 재현 가능한 빌드·검증 스크립트, 합법적으로 재배포 가능한 차분 데이터, 지원 원본의 식별 해시 등 재현에 필요한 최소 자료를 우선한다.
 
 ---
 
@@ -492,7 +565,7 @@ GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 
 
 새 세션/새 에이전트는 작업 시작 전에 최소한 다음을 읽는다.
 
-1. 이 문서: `D:\Game - Localizing\LOCALIZATION_QA_STANDARD.md`
+1. 이 문서: 프로젝트가 고정한 `LOCALIZATION_QA_STANDARD.md` 또는 `https://github.com/gagnonjung/kr-patch-qa/blob/main/LOCALIZATION_QA_STANDARD.md`
 2. 프로젝트의 `HANDOFF.md`
 3. 프로젝트의 `WORKLOG.md` (있다면)
 4. 프로젝트의 `.ai-bridge/current-plan.md`
@@ -500,13 +573,52 @@ GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 
 
 권장 인계 문구:
 
-> 먼저 `D:\Game - Localizing\LOCALIZATION_QA_STANDARD.md`를 읽고 공통 QA·런타임 안전 규약으로 적용한다. 그 다음 이 프로젝트의 `HANDOFF.md`, `WORKLOG.md`, `.ai-bridge/current-plan.md`를 읽어 프로젝트별 예외와 현재 상태를 이어받는다. 공통 규약보다 프로젝트 규칙이 더 엄격하면 더 엄격한 쪽을 따른다.
+> 먼저 프로젝트가 지정한 `LOCALIZATION_QA_STANDARD.md` 또는 `kr-patch-qa`의 공통 규약을 읽고 QA·런타임 안전 기준으로 적용한다. 그 다음 이 프로젝트의 `HANDOFF.md`, `WORKLOG.md`, `.ai-bridge/current-plan.md`를 읽어 프로젝트별 예외와 현재 상태를 이어받는다. 공통 규약보다 프로젝트 규칙이 더 엄격하면 더 엄격한 쪽을 따른다.
 
 ---
 
 ## 16. 플랫폼별 추가 주의 예시
 
 이 절은 공통 규약을 대체하지 않고 보강한다.
+
+### 16.1 적용 범위는 비트 세대가 아니라 실제 저장·소비 구조로 나눈다
+
+이 규약의 공통 불변식은 8/16/32/64비트 등 세대와 무관하게 적용한다.
+
+- 원본/지원 리비전 고정
+- 실제 게임 원문 우선
+- 한국어 문장/화자/용어 QA
+- 실제 소비자 기준 byte/display/glyph capacity 검증
+- 변경 경계와 보호 영역 검증
+- final readback
+- 정적 QA와 runtime smoke 분리
+- last-known-good 회귀 관리
+- runtime PASS 이후 canonical 승격
+
+반면 다음 항목은 해당 구조가 실제로 존재할 때만 적용한다.
+
+- ISO extent, sector, LBA, FST, 파일시스템 테이블
+- 대형 아카이브의 entry descriptor
+- 압축 stream과 별도 allocation span/sector reservation
+- 디스크 스트리밍 경계
+
+따라서 “32비트 이전/이후” 자체를 QA 적용 경계로 삼지 않는다. 예를 들어 N64는 카트리지 기반이지만 DMA table·segmented pointer·압축 블록 검증이 중요하고, 8/16비트 카트리지 게임은 LBA 대신 bank mapping·pointer width·ROM window·VRAM/tile budget이 핵심일 수 있다.
+
+### 8/16비트 카트리지 중심 플랫폼
+
+SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게임 구조에 따라 다음을 우선 확인한다.
+
+- CPU 주소 공간과 ROM bank mapping
+- bank crossing 허용 여부와 pointer/address width
+- fixed bank / switchable bank / mapper 규칙
+- 16-bit/24-bit pointer 및 bank byte 분리 저장
+- free-space 사용 시 실제 runtime bank reachability
+- text/font/tile data가 공유하는 고정 슬롯과 bank budget
+- PPU/VDP tile index, tilemap, palette index, VRAM/CGRAM/CRAM 제약
+- 압축 데이터가 있으면 decompressor의 출력 버퍼와 bank 경계
+- ROM expansion을 할 경우 header/mapper/checksum 및 실제 매핑 변화 검증
+
+이 플랫폼들에는 존재하지 않는 ISO/LBA/FST 검사를 억지로 적용하지 않는다. 대신 그 항목이 보호하려던 목적 — **실제 소비자가 읽는 위치·크기·경계가 바뀌지 않았는지 검증하는 것** — 을 해당 플랫폼의 bank/pointer/tile 구조로 치환한다.
 
 ### GameCube / Wii 계열
 

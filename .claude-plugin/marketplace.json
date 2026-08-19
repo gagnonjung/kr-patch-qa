@@ -1,0 +1,14 @@
+{
+  "name": "kr-patch-qa",
+  "description": "레트로 게임 한글화 QA 및 런타임 안전 Agent Skill",
+  "owner": {
+    "name": "GagnonJung"
+  },
+  "plugins": [
+    {
+      "name": "kr-patch-qa",
+      "source": "./",
+      "description": "한국어 문장 QA, 바이너리/런타임 안전 검증, RC·캐노니컬·배포 판정을 위한 Agent Skill"
+    }
+  ]
+}
