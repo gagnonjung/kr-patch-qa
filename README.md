@@ -281,7 +281,7 @@ kr-patch-qa
 
 ### emucap — 실제 에뮬레이터 런타임 검증
 
-**저장소:** [gagnonjung/emucap](https://github.com/gagnonjung/emucap)
+**저장소:** [mcpads/emucap](https://github.com/mcpads/emucap)
 
 `emucap`은 실행 중인 에뮬레이터의 메모리·상태·화면을 AI 에이전트가 읽고 제어할 수 있게 하는 **레트로 게임 패치 디버깅용 MCP 인프라**입니다.
 
@@ -296,7 +296,7 @@ emucap은 크게 두 계층을 제공합니다.
 
 #### 설치/등록
 
-전체 설치 절차는 emucap 저장소의 [한국어 README](https://github.com/gagnonjung/emucap/blob/main/README.ko.md)를 따릅니다.
+전체 설치 절차는 emucap 저장소의 [한국어 README](https://github.com/mcpads/emucap/blob/main/README.ko.md)를 따릅니다.
 
 Codex를 Windows에서 사용할 경우 emucap을 빌드한 뒤 PowerShell에서 다음 등록 스크립트를 사용합니다.
 
