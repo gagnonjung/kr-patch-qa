@@ -354,6 +354,7 @@ tools/register-codex-mcp.ps1
 | 플랫폼 | 게임 |
 |---|---|
 | Dreamcast | Sonic Adventure 2 |
+| GameCube | Metal Gear Solid: The Twin Snakes |
 | PlayStation 2 | JoJo no Kimyou na Bouken: Ougon no Kaze |
 | Sega Saturn | Slayers Royal |
 | PlayStation | Suzuki Bakuhatsu |
@@ -375,6 +376,17 @@ tools/register-codex-mcp.ps1
 - 추출 게임 리소스와 빌드 결과는 Git에서 제외
 - 텍스트/폰트/이미지/자막 도구는 source-only 툴체인으로 추적
 - 정적 인코딩/압축 크기 검증과 실제 인게임 검토를 별도 단계로 구분
+
+### Metal Gear Solid: The Twin Snakes — GameCube
+
+공통화할 만한 패턴:
+
+- GameCube FST의 offset/size와 비대상 파일 물리 배치를 최종 이미지에서 다시 검증
+- `stage.dat`처럼 압축 스트림 크기와 실제 allocation/sector span이 분리된 자산은 재압축 결과가 작아졌다는 이유만으로 known-good allocation floor를 축소하지 않음
+- 텍스트·폰트·그래픽 자체가 정상이어도 압축 descriptor나 물리 통합 변경만으로 특정 장면 전환에서 프리징이 발생할 수 있으므로 계층별로 회귀를 분리
+- 런타임 PASS가 확인된 마지막 정상 빌드와 문제 첫 빌드의 해시를 고정해 원인 범위를 좁힘
+- 미션 로그·무전·컷신·장소명처럼 같은 표현이 여러 소비 경로에 존재할 수 있으므로 논리 문자열 하나가 아니라 실제 physical consumer를 전수 확인
+- 여러 디스크로 구성된 게임은 디스크별 정적/readback/runtime PASS를 모두 확보한 뒤에만 최종 패치 패키지를 만듦
 
 ### 죠죠의 기묘한 모험 황금의 바람 — 한글화 재현 프레임워크
 
@@ -438,7 +450,7 @@ tools/register-codex-mcp.ps1
 
 이 저장소들은 `kr-patch-qa`의 규칙을 그대로 구현한 템플릿이 아니라, **실제 한글화 프로젝트에서 재사용 가능한 안전 패턴을 확인할 수 있는 사례**로 봅니다.
 
-Dreamcast/PlayStation 2/Sega Saturn/PlayStation/Nintendo 64 사례에는 파일시스템·아카이브·압축·섹터 또는 DMA 재구성처럼 플랫폼별 구조가 섞여 있습니다. 여기서 얻은 `ISO extent`, `LBA`, 대형 archive descriptor, sector allocation, DMA table 같은 세부 규칙을 존재하지 않는 다른 플랫폼에 그대로 요구하지 않습니다.
+Dreamcast/GameCube/PlayStation 2/Sega Saturn/PlayStation/Nintendo 64 사례에는 파일시스템·아카이브·압축·섹터 또는 DMA 재구성처럼 플랫폼별 구조가 섞여 있습니다. 여기서 얻은 `ISO extent`, `LBA`, 대형 archive descriptor, sector allocation, DMA table 같은 세부 규칙을 존재하지 않는 다른 플랫폼에 그대로 요구하지 않습니다.
 
 `kr-patch-qa`는 비트 세대보다 **실제 저장·주소 지정·렌더링 구조**를 기준으로 적용합니다.
 
