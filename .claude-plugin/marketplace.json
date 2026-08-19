@@ -1,6 +1,6 @@
 {
   "name": "kr-patch-qa",
-  "description": "레트로 게임 한글화 QA 및 런타임 안전 Agent Skill",
+  "description": "에뮬레이터/플레이 없이도 사용할 수 있는 정적 우선 레트로 게임 한글화 QA 및 런타임 안전 Agent Skill",
   "owner": {
     "name": "GagnonJung"
   },
@@ -8,7 +8,7 @@
     {
       "name": "kr-patch-qa",
       "source": "./",
-      "description": "한국어 문장 QA, 바이너리/런타임 안전 검증, RC·캐노니컬·배포 판정을 위한 Agent Skill"
+      "description": "플레이 없이 SOURCE/STATIC/READBACK QA를 수행하고 필요할 때 런타임 검증으로 확장하는 한국어 패치 QA Agent Skill"
     }
   ]
 }

@@ -1,7 +1,7 @@
 {
   "name": "kr-patch-qa",
-  "version": "1.1.0",
-  "description": "레트로 게임 한글화 프로젝트의 한국어 QA, 바이너리/런타임 안전 검증, RC·캐노니컬·배포 판정을 위한 Agent Skill.",
+  "version": "1.1.1",
+  "description": "에뮬레이터 실행이나 실제 플레이 없이도 SOURCE/STATIC/READBACK QA를 수행할 수 있는 정적 우선 레트로 게임 한글화 QA Agent Skill. 필요할 때 emucap으로 런타임 검증을 확장합니다.",
   "author": {
     "name": "GagnonJung",
     "url": "https://github.com/gagnonjung"
@@ -21,8 +21,8 @@
   "skills": "./skills/",
   "interface": {
     "displayName": "KR Patch QA",
-    "shortDescription": "Korean localization QA and runtime-safety gates",
-    "longDescription": "Shared Korean retro-game localization QA rules covering language quality, glyph and binary safety, final-image readback, runtime regression testing, canonical promotion, and release gating.",
+    "shortDescription": "Static-first Korean localization QA",
+    "longDescription": "Static-first Korean retro-game localization QA that works without emulator launch or gameplay through source QA, binary/layout/glyph/graphics/compression/archive validation, and final-image readback. emucap can optionally extend the workflow with runtime regression testing, canonical promotion, and release gating evidence.",
     "developerName": "GagnonJung",
     "category": "Developer Tools",
     "capabilities": [

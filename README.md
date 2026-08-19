@@ -4,8 +4,9 @@
 
 번역 문장의 자연스러움만 검사하는 규칙집이 아니라, 실제 게임에서 한글화가 안전하게 동작하도록 **텍스트 → 글리프/폰트 → 그래픽 → 포인터/오프셋 → 압축/아카이브 → ROM·디스크 물리 배치 → 최종 빌드 → 런타임 스모크 테스트**까지 하나의 검증 흐름으로 다룹니다.
 
-> **핵심 원칙:** 정적 검사 PASS는 런타임 PASS가 아닙니다.
-> 최종 배포 후보는 실제 게임의 소비 경로와 런타임에서 별도로 검증해야 합니다.
+> **핵심 원칙:** `kr-patch-qa`는 에뮬레이터 실행이나 실제 플레이 없이도 사용할 수 있는 **정적 우선(static-first) QA 스킬**입니다.
+> `SOURCE_QA` → `STATIC_BINARY_QA` → `RC_BUILD` → `RC_READBACK_QA`까지는 `emucap` 없이 독립적으로 수행할 수 있습니다.
+> 다만 정적 검사 PASS는 런타임 PASS가 아니므로, 실제 실행을 하지 않은 경우 `RUNTIME_SMOKE = NOT RUN/PENDING`으로 명확히 남기고 런타임 확인이 필요한 캐노니컬 승격과 최종 배포 판정은 별도로 처리합니다.
 
 ## 기준 문서
 
@@ -147,7 +148,7 @@ https://github.com/gagnonjung/kr-patch-qa/blob/main/LOCALIZATION_QA_STANDARD.md
 
 원문, 레코드 식별자, 제어 토큰, 화자/음성/타이밍 같은 구조 필드는 수정 가능한 번역문과 분리해 보존하는 것이 좋습니다.
 
-예를 들어 [`dc_sa2_ko`](https://github.com/gagnonjung/dc_sa2_ko)는 `messages.tsv`에서 `original`과 메시지 식별자·제어값을 보존하고 `translation`만 실제 한국어 입력으로 사용합니다. [`ps2_giogio_ko`](https://github.com/gagnonjung/ps2_giogio_ko)는 사람이 편집하는 `kor_edit`과 게임이 소비하는 확정 바이트 `output`을 분리합니다.
+예를 들어 **Sonic Adventure 2** 사례에서는 `messages.tsv`의 `original`과 메시지 식별자·제어값을 보존하고 `translation`만 실제 한국어 입력으로 사용했습니다. **JoJo no Kimyou na Bouken: Ougon no Kaze** 사례에서는 사람이 편집하는 `kor_edit`과 게임이 소비하는 확정 바이트 `output`을 분리했습니다.
 
 이 구분은 번역 원문을 사람이 검토하기 쉽게 유지하면서도, 최종 빌드 입력을 바이트 단위로 재현하고 검증하는 데 도움이 됩니다.
 
@@ -190,7 +191,7 @@ RELEASE
 5. 최종 아카이브 또는 이미지 직렬화
 6. 결과 readback 및 기준선 비교
 
-[`ps2_giogio_ko`](https://github.com/gagnonjung/ps2_giogio_ko)는 `tools/giogio_pipeline.py`를 유일한 주 진입점으로 두고 원본 ISO 확인부터 AFS 재조립, 기준선 비교, ISO 재기록, 최종 재추출 검증까지 연결합니다.
+**JoJo no Kimyou na Bouken: Ougon no Kaze** 사례에서는 하나의 주 파이프라인을 두고 원본 ISO 확인부터 AFS 재조립, 기준선 비교, ISO 재기록, 최종 재추출 검증까지 연결했습니다.
 
 개별 도구가 각각 성공했다는 사실을 합산해서 “최종 빌드가 검증되었다”고 판정하지 않는 것이 중요합니다.
 
@@ -205,7 +206,7 @@ RELEASE
 - 출력 이미지의 크기와 해시 기록
 - 고정 extent를 유지하는 구조라면 남는 공간의 패딩도 검증
 
-`ps2_giogio_ko`처럼 **논리 아카이브를 먼저 검증하고 최종 ISO에 기록한 뒤 다시 추출해 동일 결과를 확인하는 방식**이 좋은 예입니다.
+**JoJo no Kimyou na Bouken: Ougon no Kaze** 사례처럼 **논리 아카이브를 먼저 검증하고 최종 ISO에 기록한 뒤 다시 추출해 동일 결과를 확인하는 방식**이 좋은 예입니다.
 
 전체 ISO/ROM 해시가 과거 빌드와 다르더라도 곧바로 실패로 볼 수는 없습니다. 빌드 방식이 달라 전체 이미지 해시가 달라지는 경우에는, 실제 게임이 소비하는 논리 파일·아카이브·실행 파일과 보호해야 할 물리 배치가 의도대로 동일한지 별도로 증명해야 합니다.
 
@@ -218,7 +219,7 @@ RELEASE
 - 남는 고정 영역은 원본 규칙에 맞게 패딩
 - 다른 파일의 LBA/FST/offset을 불필요하게 이동하지 않음
 
-`ps2_giogio_ko`는 원본 ISO의 기존 extent 안에 결과를 기록하고 남는 AFS 슬롯을 0으로 채워 기존 파일 배치와 부트 구조를 유지합니다. 이 패턴은 다른 고정 배치 디스크 프로젝트에서도 재사용할 수 있습니다.
+**JoJo no Kimyou na Bouken: Ougon no Kaze** 사례에서는 원본 ISO의 기존 extent 안에 결과를 기록하고 남는 AFS 슬롯을 0으로 채워 기존 파일 배치와 부트 구조를 유지했습니다. 이 패턴은 다른 고정 배치 디스크 프로젝트에서도 재사용할 수 있습니다.
 
 ### 8. 공개 저장소와 저작물 경계를 분리한다
 
@@ -232,7 +233,7 @@ RELEASE
 
 원본 ROM/ISO, 패치된 전체 이미지, 원본에서 통째로 추출한 게임 자산, 생성된 실행 파일은 저장소에서 제외하는 것을 기본으로 합니다.
 
-`dc_sa2_ko`는 source-only 툴체인을 추적하고 추출 PRS/언팩 바이너리/빌드 출력/패치 디스크를 제외하며, `ps2_giogio_ko`도 원본 ISO·전체 패치 ISO·원본 추출 AFS/PZZ/실행 파일을 공개 저장소에 넣지 않습니다.
+**Sonic Adventure 2** 사례에서는 source-only 툴체인만 추적하고 추출 PRS/언팩 바이너리/빌드 출력/패치 디스크를 제외했으며, **JoJo no Kimyou na Bouken: Ougon no Kaze** 사례에서도 원본 ISO·전체 패치 ISO·원본 추출 AFS/PZZ/실행 파일을 공개 저장소에 포함하지 않는 방식을 사용했습니다.
 
 ## 함께 사용하는 프로젝트
 
@@ -284,7 +285,9 @@ kr-patch-qa
 
 `emucap`은 실행 중인 에뮬레이터의 메모리·상태·화면을 AI 에이전트가 읽고 제어할 수 있게 하는 **레트로 게임 패치 디버깅용 MCP 인프라**입니다.
 
-`kr-patch-qa`가 `RUNTIME_SMOKE`에서 요구하는 실제 실행 증거를 확보하거나, 한글화 이후 발생한 프리징·그래픽 깨짐·잘못된 상태 전이의 원인을 좁힐 때 사용할 수 있습니다.
+**`emucap`은 `kr-patch-qa` 사용의 필수 조건이 아닙니다.** `kr-patch-qa`는 에뮬레이터를 실행하지 않고도 번역/레이아웃/글리프/포인터/압축/아카이브/물리 배치/final readback을 정적으로 검사할 수 있으며, `RC_READBACK_QA`까지 독립적으로 수행할 수 있습니다.
+
+`emucap`은 그 다음 단계에서 `RUNTIME_SMOKE`의 실제 실행 증거를 확보하거나, 한글화 이후 발생한 프리징·그래픽 깨짐·잘못된 상태 전이의 원인을 좁혀 **정적 QA를 런타임 검증으로 확장하고 싶을 때 선택적으로 연계**합니다.
 
 emucap은 크게 두 계층을 제공합니다.
 
@@ -329,21 +332,24 @@ tools/register-codex-mcp.ps1
                        ▼
 ┌──────────────────────────────────────────────┐
 │ kr-patch-qa                                  │
-│ 한국어 품질 + 바이너리/런타임 안전 QA 기준   │
+│ SOURCE_QA → STATIC_BINARY_QA → RC_READBACK_QA│
+│ ※ 에뮬레이터/플레이 없이 독립 수행 가능       │
 └──────────────────────┬───────────────────────┘
-                       │ RC_READBACK_QA 통과
-                       ▼
-┌──────────────────────────────────────────────┐
-│ emucap                                       │
-│ 실제 에뮬레이터에서 RUNTIME_SMOKE / 회귀 분석 │
-└──────────────────────┬───────────────────────┘
-                       │ PASS
-                       ▼
-             CANONICAL_PROMOTION
                        │
-                       ▼
-              PATCH_PACKAGE / RELEASE
+          ┌────────────┴────────────┐
+          │                         │
+          ▼                         ▼
+ 정적 QA 결과 보고             emucap (선택)
+ RUNTIME_SMOKE=PENDING          RUNTIME_SMOKE / 회귀 분석
+                                    │ PASS
+                                    ▼
+                           CANONICAL_PROMOTION
+                                    │
+                                    ▼
+                           PATCH_PACKAGE / RELEASE
 ```
+
+즉 `kr-patch-qa` 자체는 **정적 QA만으로도 독립적으로 유용**합니다. 현재 환경에서 게임을 직접 플레이할 수 없거나 에뮬레이터 자동화가 없어도 정적 결과를 `PASS / FAIL / NOT RUN`으로 분리해 보고할 수 있습니다. `emucap`은 런타임 증거가 필요할 때 추가하는 선택적 확장입니다.
 
 실제 작업에서는 세 프로젝트가 직렬로만 움직이는 것은 아닙니다. 예를 들어 emucap에서 런타임 프리징을 발견하면 다시 `create-kr-patch`의 압축/재삽입/폰트/그래픽/런타임 자산 판단 영역으로 돌아가 원인을 수정하고, `kr-patch-qa` 기준으로 다시 정적 검증과 readback을 거친 뒤 같은 런타임 경로를 재검증합니다.
 
@@ -358,6 +364,7 @@ tools/register-codex-mcp.ps1
 | PlayStation 2 | JoJo no Kimyou na Bouken: Ougon no Kaze |
 | Sega Saturn | Slayers Royal |
 | PlayStation | Suzuki Bakuhatsu |
+| PlayStation | Getter Robo Daikessen! |
 | Nintendo 64 | The Legend of Zelda: Majora's Mask |
 
 이 목록은 해당 게임의 구현 세부를 다른 플랫폼에 그대로 적용한다는 의미가 아닙니다. 공통 규칙은 실제 저장·주소 지정·렌더링·런타임 소비 구조가 같은 경우에만 재사용하고, 플랫폼별 세부 검증은 해당 구조에 맞게 치환합니다.
@@ -365,8 +372,6 @@ tools/register-codex-mcp.ps1
 ## 참고할 만한 실제 프로젝트
 
 ### Sonic Adventure 2 Korean Translation
-
-- 저장소: [gagnonjung/dc_sa2_ko](https://github.com/gagnonjung/dc_sa2_ko)
 
 공통화할 만한 패턴:
 
@@ -390,8 +395,6 @@ tools/register-codex-mcp.ps1
 
 ### 죠죠의 기묘한 모험 황금의 바람 — 한글화 재현 프레임워크
 
-- 저장소: [gagnonjung/ps2_giogio_ko](https://github.com/gagnonjung/ps2_giogio_ko)
-
 공통화할 만한 패턴:
 
 - 원본 ISO MD5/SHA-256을 먼저 검증하고 다른 리비전은 자동 추정하지 않음
@@ -405,8 +408,6 @@ tools/register-codex-mcp.ps1
 
 ### Slayers Royal — Sega Saturn
 
-- 저장소: [gagnonjung/ss_slayersroyale_ko](https://github.com/gagnonjung/ss_slayersroyale_ko)
-
 공통화할 만한 패턴:
 
 - 정적 추정으로 잡았던 폰트 규격이 실기 증거와 충돌하면 기존 가정을 폐기하고 런타임 기준선을 다시 확정
@@ -419,8 +420,6 @@ tools/register-codex-mcp.ps1
 
 ### Suzuki Bakuhatsu — PlayStation
 
-- 저장소: [gagnonjung/ps1_suzukibakuhatsu](https://github.com/gagnonjung/ps1_suzukibakuhatsu)
-
 공통화할 만한 패턴:
 
 - Mode2/2352와 XA/STR처럼 섹터 배치에 민감한 자산은 일반 ISO 재빌드 성공과 런타임 안전을 별도로 판단
@@ -432,9 +431,18 @@ tools/register-codex-mcp.ps1
 - 디코더 규칙이 틀렸다고 밝혀지면 불변 원본에서 전체 재추출하고 기존 번역 이관 audit과 idempotence를 검증
 - 전체 모집단을 먼저 열거해 dialogue/empty/duplicate/unclassified 상태를 고정하고 누락을 실패 처리
 
-### The Legend of Zelda: Majora's Mask — Nintendo 64
+### Getter Robo Daikessen! — PlayStation
 
-- 저장소: [gagnonjung/n64_zeldamm_ko](https://github.com/gagnonjung/n64_zeldamm_ko)
+공통화할 만한 패턴:
+
+- 에뮬레이터 실행 없이도 번역·그래픽의 논리 inventory와 실제 물리 consumer 수를 분리해 정적 QA 수행
+- 통합 VFS의 전체 크기를 유지하고 full VFS roundtrip 및 VFS 바깥 영역 byte identity를 함께 검증
+- 변경 섹터의 EDC/ECC를 다시 계산·검증해 CD 이미지 물리 무결성을 정적 단계에서 확인
+- 정적 inventory가 전부 PASS여도 실제 플레이에서 별도 UI 소비처의 미번역이나 상태창 진입 프리징이 발견될 수 있으므로 `STATIC_* PASS`를 `RUNTIME_SMOKE PASS`로 승격하지 않음
+- 플레이 제보가 정적 QA와 충돌하면 플레이 증거를 우선해 기존 inventory 경계가 빠뜨린 consumer를 다시 탐색
+- 프리징 원인은 텍스트/폰트/그래픽/VFS 물리 통합 계층으로 분리하고, 한 번에 여러 계층을 재수정하지 않음
+
+### The Legend of Zelda: Majora's Mask — Nintendo 64
 
 공통화할 만한 패턴:
 

@@ -1,6 +1,6 @@
 ---
 name: kr-patch-qa
-description: Use for Korean retro-game localization QA, RC/release validation, runtime-safety regression checks, and requests such as "한글화 QA 스킬 적용해줘", "한글화 QA", "한글 패치 QA", "한글 패치 검수", "배포 전 QA", "RC 검증", or "프리징 회귀 검수". Requests such as "한글화 QA 스킬 설치해줘" refer to installing this plugin.
+description: Static-first Korean retro-game localization QA that works without launching an emulator or playing the game. Use for source QA, binary/layout/glyph/graphics/compression/archive checks, final-image readback, RC/release validation, runtime-safety regression checks, and requests such as "한글화 QA 스킬 적용해줘", "한글화 QA", "한글 패치 QA", "한글 패치 검수", "배포 전 QA", "RC 검증", or "프리징 회귀 검수". emucap/runtime verification is optional and extends static QA when runtime evidence is needed. Requests such as "한글화 QA 스킬 설치해줘" refer to installing this plugin.
 ---
 
 # Korean patch QA
@@ -14,6 +14,14 @@ The normative standard for this plugin is the repository-root document:
 - `../../LOCALIZATION_QA_STANDARD.md`
 
 Read the relevant sections before judging a build, QA report, regression, runtime smoke result, canonical promotion, or release package.
+
+## Static-first operation
+
+This skill does not require an emulator, gameplay automation, or `emucap` to be useful. Without launching the game, it can perform and report `SOURCE_QA`, `STATIC_BINARY_QA`, `RC_BUILD`, and `RC_READBACK_QA` using source files, build reports, binary structures, hashes, renderer constraints, glyph plans, archives, ROM/disc layout, and final-image readback.
+
+If no runtime execution is performed, record `RUNTIME_SMOKE` as `NOT RUN` or `PENDING`. Do not downgrade the completed static checks, but do not reinterpret them as runtime proof or promote a candidate through a runtime-required canonical/release gate.
+
+`emucap` is an optional extension for collecting runtime evidence and reproducing regressions after the static QA path.
 
 ## Relationship to create-kr-patch
 
