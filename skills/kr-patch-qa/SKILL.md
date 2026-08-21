@@ -37,11 +37,13 @@ Do not copy generic methodology into this skill when `create-kr-patch` already o
 1. Identify the exact source revision and last-known-good baseline.
 2. Read the project-specific instructions and the relevant sections of `../../LOCALIZATION_QA_STANDARD.md`.
 3. Keep source-language QA, static binary QA, RC build, final-image readback, runtime smoke, canonical promotion, patch packaging, and release as separate states.
-4. Verify Korean punctuation, particles, spacing, voice/register, terminology, renderer-width line breaks, and glyph coverage against the actual game consumer.
-5. Verify changed binary structures at their real consumer boundary: spans, records, pointers, sizes, alignment, compression descriptors, allocation spans, archives, graphics structures, and physical layout as applicable.
-6. Re-read the final ROM/disc/archive output and verify changed and protected regions before treating it as an RC.
-7. If a freeze/crash appears, preserve last-known-good and first-known-bad identities and isolate text, glyph/font, graphics, archive/compression, and physical integration rather than changing several layers at once.
-8. Promote only the exact RC that passed the required runtime smoke path. Build distributable patches only from the canonical result.
+4. Verify Korean punctuation, particles, spacing, dependent-noun/auxiliary-verb usage, voice/register, terminology, protected multiword proper nouns, renderer-width line breaks, and glyph coverage against the actual game consumer.
+5. Distinguish canonical unique text, physical occurrences, translation approval state, and runtime-generated/hardcoded text. Do not treat a drafted or statically passing corpus as human-approved or runtime-complete.
+6. Verify changed binary structures at their real consumer boundary: spans, records, pointers, sizes, decoded/raw size, raw/packed descriptors, allocator-visible sizes, alignment, compression descriptors, allocation spans, archives, graphics structures, and physical layout as applicable.
+7. Re-read the final ROM/disc/archive output and verify changed and protected regions before treating it as an RC. If source/translation/font/graphics/binary inputs change afterward, mark that RC stale.
+8. If a freeze/crash appears, preserve last-known-good and first-known-bad identities and isolate text, glyph/font, graphics, archive/compression, and physical integration rather than changing several layers at once.
+9. For runtime gates, record whether the path came from cold boot, a normal game save, or a save state. Do not use a post-initialization save state as the sole proof for assets that load only during boot/scene/battle initialization.
+10. Promote only the exact RC that passed the required runtime smoke path. Build distributable patches only from the canonical result, preferably as a direct supported-retail-to-canonical patch with encode/decode verification.
 
 ## Runtime verification with emucap
 
@@ -51,9 +53,10 @@ Typical composition:
 
 1. Establish the exact ROM/disc identity.
 2. Start an emucap run for the target build.
-3. Reproduce the required gameplay/menu/event path.
-4. Record screenshots, state/memory observations, interventions, and gates as needed.
-5. Feed the observed result back into the `RUNTIME_SMOKE` and regression records required by the common standard.
+3. Reproduce the required gameplay/menu/event path, using cold boot when the changed asset is loaded during initialization.
+4. Record whether normal saves or save states were used, including the state’s source build and creation point when applicable.
+5. Record screenshots, state/memory observations, interventions, and gates as needed.
+6. Feed the observed result back into the `RUNTIME_SMOKE` and regression records required by the common standard.
 
 `emucap` supplies emulator control and experiment evidence; it does not replace the QA policy in this skill.
 

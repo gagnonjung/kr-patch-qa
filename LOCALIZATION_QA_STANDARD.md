@@ -1,7 +1,7 @@
 # Game Localization Common QA & Runtime Safety Standard
 
-Version: 1.1
-Updated: 2026-08-19
+Version: 1.2
+Updated: 2026-08-21
 Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 이 문서는 플랫폼·게임별 세부 규칙보다 상위에 두는 **공통 QA / 바이너리 안전 / 런타임 회귀 방지 규약**이다.
@@ -85,6 +85,26 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 추출기가 “대부분 맞는다”는 이유로 이미 알려진 잘못된 디코딩을 canonical 입력으로 유지하지 않는다.
 
+### 2.5 문맥 교정과 검색 정규화
+
+자동 교정은 가능하면 **원문 전체 문장, stable message/entry ID, 화자/소비처 같은 원래 문맥 키**에 묶는다.
+
+- 같은 한국어 표면 문자열이 여러 일본어 원문/화자/상황에서 나올 수 있으므로 한국어 결과 문자열만 보고 전역 치환하지 않는다.
+- 검색 편의를 위해 장음표, 공백, 전각/반각, 표기 변형을 넓게 찾을 수는 있지만, 실제 패치 적용 전에는 target revision의 **정확한 원문/바이트 guard**를 다시 확인한다.
+- 외부 대본이나 다른 지역판 표기는 discovery 보조일 뿐 target revision의 실제 원문을 덮어쓰는 기준이 아니다.
+
+### 2.6 번역 승인 상태
+
+대규모 프로젝트에서는 최소한 다음 상태를 구분하는 것을 권장한다.
+
+- `needs_translation`
+- `drafted`
+- `needs_human_review`
+- `approved`
+- `excluded_non_user_facing`
+
+자동 QA가 모두 통과해도 `drafted`가 사람 검수를 자동으로 의미하지 않는다. 이미 `approved`된 항목이라도 번역문, 원문 해석, 제어코드, 레이아웃 또는 소비 구조가 바뀌면 다시 `needs_human_review`로 돌린다.
+
 ---
 
 ## 3. 화자·청자·어투 QA
@@ -111,6 +131,7 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - canonical terminology table을 둔다.
 - 인명, 조직명, 기술명, 지명, 장비명, UI명은 소비처 전체에서 전수 검사한다.
 - 한 번 수정한 용어가 legacy TM이나 duplicate table에서 다시 살아나지 않게 한다.
+- 원작·공식 작품에 이미 정착된 명칭이 있으면 프로젝트 용어 정책에서 그 명칭을 우선 검토하고, 임의 번역명은 별도 근거 없이 새 canonical로 만들지 않는다.
 
 ---
 
@@ -146,6 +167,9 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 - 어절 단위 띄어쓰기를 우선한다.
 - 조사(은/는, 이/가, 을/를, 과/와, 으로/로 등)는 고유명사 치환 이후 재검사한다.
+- 의존 명사는 한국어 문법에 맞게 띄어 쓴다. 예: `할 수 있다`, `한 것 같다`, `갈 줄 안다`.
+- 보조 용언, 의존 명사, 조사 결합은 단순 공백 정규식으로 일괄 치환하지 말고 문맥과 프로젝트 문체를 함께 본다.
+- `수밖에`, 고유명사+조사, 숫자+단위처럼 겉모양만 보고 분리/결합하면 오히려 틀릴 수 있는 구성은 형태소 단위로 확인한다.
 - 형태소 분리는 화면 폭 때문에 꼭 필요한 경우에만 허용한다.
 - 의미 없는 일본어식 직역 어순, 일본어식 존대, 중복 표현을 제거한다.
 - 반복 단어, 탈락된 주어/목적어, 비문 후보를 기계 탐지 후 사람이 판정한다.
@@ -170,6 +194,7 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
    - 조사만 다음 줄에 남음
    - 어미만 다음 줄에 남음
    - 인명/지명/장비명 분리
+   - 내부에 공백이 있는 다어절 고유명사의 중간 분리
    - 숫자+단위, 버튼명, 약어 분리
    - 한글 조합을 시각적으로 부자연스럽게 절단
    - 숨겨진 4번째 줄 생성
@@ -239,6 +264,9 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
    - 자산별 실제 opaque/transparent index 범위와 CLUT ramp를 원본에서 확인한다.
    - 유효하지 않은 인덱스가 투명/예약 상태라면 재양자화 시 해당 인덱스를 사용하지 않는다.
 7. 여러 상태(normal/selected/disabled 등)가 같은 atlas나 palette를 공유하면 한 상태만 보고 palette-safe라고 판정하지 않는다.
+8. 다른 게임/전작/지역판의 검증된 자산을 재사용할 수는 있지만, **dimensions, texture format, bpp, palette/TLUT semantics, index vocabulary, tiling/swizzle, archive span**이 target consumer와 호환되는 경우에만 사용한다.
+9. 다른 지역판/버전의 XML, 심볼, texture offset, archive layout은 힌트로만 사용한다. 실제 target revision의 consumer/segment/overlay/pointer 참조가 최종 권위다.
+10. 재사용 가능한 검증 자산이 있는데 같은 모양을 임의 재생성하지 않는다. 반대로 호환성이 증명되지 않은 자산은 “같아 보인다”는 이유로 복사하지 않는다.
 
 ---
 
@@ -304,6 +332,18 @@ zlib, Yay0, LZ 계열 등 압축 컨테이너를 수정할 때:
 5. 과거 정상 빌드의 allocation floor를 유지할 수 있으면 유지한다.
 6. 모든 변경 블록에 대해 다시 압축 해제 테스트를 수행한다.
 
+### 8.4.1 decoded/raw size도 런타임 계약이다
+
+압축 컨테이너가 같은 physical window 안에 들어간다는 이유만으로 안전하다고 판정하지 않는다.
+
+- decoded/raw size
+- outer container raw size
+- raw/packed descriptor
+- allocator에 전달되는 크기
+- decompression destination buffer
+
+를 서로 별도 값으로 추적한다. repack/round-trip이 성공해도 decoded size 또는 raw-size descriptor 변경이 런타임 allocator/loader 계약을 깨뜨릴 수 있다. 구조가 증명되지 않았다면 known-good raw-size/descriptor floor 또는 exact value를 보존한다.
+
 ## 8.5 ISO / ROM 물리 레이아웃
 
 GameCube FST, CD sector, PS1/PS2 LBA, Saturn file table 등 플랫폼별 물리 테이블을 사용하는 경우:
@@ -358,6 +398,8 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 3. 같은 일본어 원문/한국어 구문/해시/근접 구조로 duplicate consumer를 전수 조사한다.
 4. base table과 expanded/merged/runtime table이 따로 있으면 모두 동기화한다.
 5. 수정 스크립트는 **재실행 시 change 0**이 되는 멱등 상태를 목표로 한다.
+6. 같은 문구/그래픽이라도 소비처별 glyph index, codebook, palette, runtime family가 다르면 하나의 재생성 자산으로 강제로 통일하지 않는다.
+7. 이미 런타임 PASS한 복제 자산이 있다면 새로 재인코딩한 “동일 내용” 자산보다 그 **검증된 바이트 계보(lineage)**를 우선한다. 다른 consumer에 복사할 때도 해당 consumer의 인코딩/로더 호환성을 별도로 증명한다.
 
 ## 8.9 원자적 빌드와 readback
 
@@ -392,6 +434,18 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 여러 독립 도구의 부분 성공을 합산해 최종 빌드 PASS로 판정하지 않는다.
 개별 재작업 경로가 있더라도 최종 후보는 주 빌드 경로로 다시 통합해 검증한다.
 
+## 8.11 런타임 생성 문자열과 코드 내 하드코딩
+
+translation table에 모든 사용자 표시 문자열이 존재한다고 가정하지 않는다.
+
+- 시간/수치 단위
+- 화폐 단위
+- 동적 아이템/플레이어 이름
+- 버튼/상태 라벨
+- 런타임 formatter가 조합하는 접미사
+
+등은 실행 코드, overlay, formatter, decoder 안에 하드코딩될 수 있다. 정적 inventory에는 **table-driven text와 runtime-generated text를 별도 모집단**으로 기록하고, 알려진 dynamic control path를 전수 조사한다.
+
 ---
 
 ## 9. 프리징이 발생했을 때의 원인 분리 순서
@@ -407,6 +461,8 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 - 프리징 직전 화면/대사/UI
 - 입력 조작
 - 항상 재현 / 간헐 재현
+- cold boot / 일반 세이브 로드 / save state 로드 여부
+- 해당 save state가 수정 자산의 초기 로드 전/후 어느 시점에 생성됐는지
 - 정상 마지막 빌드 SHA
 - 문제 첫 빌드 SHA
 
@@ -448,11 +504,14 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 
 ### 텍스트
 
+- canonical unique population과 physical occurrence population의 수량/도달 가능성
 - untranslated target-language source 잔존
+- table-driven text와 runtime-generated/hardcoded text의 누락 여부
 - 고유명사/용어 통일
 - 화자/어투 conflict
 - 종결/내부 문장부호 정책
 - 호격 쉼표
+- 띄어쓰기/의존 명사/보조 용언
 - 조사
 - 반복어/비문 후보
 - 금지 문자열/깨진 제어코드
@@ -470,10 +529,12 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 - encoded field overflow
 - block overflow
 - pointer/size mismatch
+- decoded/raw size 또는 raw descriptor의 예상 밖 변화
 - glyph missing
 - descriptor shrink
 - decompression error
 - archive entry mismatch
+- runtime-family/codebook/glyph-index lineage mismatch
 - LBA/FST layout difference
 - overlap/out-of-range
 
@@ -500,6 +561,15 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 
 특히 **상태창 진입, 컷신 시작/종료, 맵 전환, 보스전 후 전환, 저장/로드**는 버퍼·아카이브·스트리밍 경계 문제를 드러내기 쉬우므로 우선 점검한다.
 
+### 11.1 cold boot와 save state 오염 방지
+
+디스크/ROM에서 자산을 초기화 시점에 한 번만 읽어 RAM/VRAM에 유지하는 게임은 save state가 새 후보의 자산 로드를 우회할 수 있다.
+
+- 수정 대상이 부팅/장면/전투 초기화 때 로드된다면 최소 1회는 **새 후보 cold boot → 일반 게임 세이브 로드 또는 정상 진행 → 대상 화면 진입**으로 검증한다.
+- 수정 자산이 이미 로드된 뒤 만든 save state는 구 RAM/VRAM/코드 상태를 복원할 수 있으므로 새 디스크/ROM의 runtime PASS 근거로 단독 사용하지 않는다.
+- save state를 재현 도구로 사용할 때는 생성 빌드 SHA와 생성 시점을 기록하고, 해당 state가 어떤 자산의 reload를 우회하는지 명시한다.
+- 정적 readback과 새 후보의 디스크 바이트가 맞는데 화면만 과거 상태를 보이면, 즉시 새 패치 실패로 단정하기 전에 stale save-state/RAM/VRAM 가능성을 분리한다.
+
 ---
 
 ## 12. 빌드 단계 규칙
@@ -519,8 +589,13 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 
 - RC는 테스트용이다.
 - canonical은 사용자가 런타임 PASS를 선언한 빌드만 승격한다.
+- RC를 만든 뒤 source/translation/font/graphics/binary input이 바뀌면 기존 RC는 **stale**이다. 새 소스가 미반영된 후보를 최신 RC/canonical처럼 재사용하지 않는다.
 - 패치/xdelta/배포 ZIP은 canonical 승격 이후 만든다.
 - 여러 디스크 게임은 모든 디스크 PASS 이후 최종 배포 패치를 만든다.
+- 배포 패치는 가능하면 **지원 retail 원본 → 최종 canonical**을 직접 변환한다. 이전 버전 패치를 먼저 적용해야 하는 증분 체인을 기본 배포 경로로 만들지 않는다.
+- 패치 encode→decode 결과는 최종 canonical 이미지와 byte-identical인지 검증한다.
+- 패키지 내용이 바뀌면 기존 다운로드 미러/링크는 새 패키지 해시가 실제로 업로드되기 전까지 최신 링크로 표기하지 않는다.
+- 내부 QA/문구 보정마다 의미 없는 버전 번호를 올리지 않는다. 배포 버전은 실제 릴리스 또는 명확한 호환성/기능 경계에 맞추고, 중간 후보는 RC/checkpoint 식별자로 구분한다.
 
 ---
 
@@ -529,6 +604,7 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 가능하면 JSON/MD에 다음을 기록한다.
 
 - source path + SHA-256
+- source commit/revision 또는 번역/자산 입력의 기준 식별자
 - output path + SHA-256
 - file size
 - changed logical entry count
@@ -541,8 +617,11 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 - preserved region hashes
 - static QA status
 - runtime smoke status
+- runtime test provenance(cold boot / 일반 세이브 / save state와 생성 빌드)
+- candidate stale 여부
 - canonical promoted 여부
 - release patch created 여부
+- release package SHA 및 현재 미러가 그 해시를 가리키는지 여부
 
 `PASS`라고 쓸 때는 반드시 어떤 범위의 PASS인지 적는다.
 
@@ -657,17 +736,20 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 한글화의 특정 단계가 `완료`이려면 최소한 다음이 만족돼야 한다.
 
 - 번역 누락 0 또는 명시된 보류 목록 존재
+- 필요한 사람 검수/승인 상태가 명시됨
+- table-driven 및 known runtime-generated text 누락 0 또는 명시된 보류 목록 존재
 - 용어/화자/어투 QA PASS
-- 한국어 문장부호/조사/줄바꿈 QA PASS
+- 한국어 문장부호/조사/띄어쓰기/줄바꿈 QA PASS
 - 화면 폭 overflow 0
 - byte/block overflow 0
 - missing glyph 0
-- 포인터/오프셋/크기 구조 검증 PASS
+- 포인터/오프셋/크기 및 decoded/raw-size 계약 검증 PASS
 - 압축/아카이브 무결성 PASS
 - 물리 layout overlap/out-of-range 0
 - 보존 대상 회귀 0
 - 빌드 readback PASS
-- 사용자가 요구한 런타임 smoke PASS
+- RC가 최신 source/input 기준임
+- 사용자가 요구한 런타임 smoke PASS이며 필요한 경우 cold-boot provenance가 기록됨
 
 정적 검사만 끝난 경우에는 `정적 완료`, `runtime smoke pending`처럼 명확히 표시하고 최종 완료라고 부르지 않는다.
 
@@ -675,24 +757,31 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 
 ## 18. 핵심 체크리스트 요약
 
-- [ ] 원본 SHA 확인
-- [ ] 번역 원문 확인
+- [ ] 원본 SHA / target revision 확인
+- [ ] 번역 원문과 문맥 guard 확인
+- [ ] canonical unique / physical occurrence 모집단 확인
+- [ ] 번역 승인 상태 확인
 - [ ] 화자/청자/어투 확인
-- [ ] 용어 중복 소비처 전수 확인
+- [ ] 원작/공식 용어 및 중복 소비처 전수 확인
 - [ ] 문장부호 정책 확인
-- [ ] 조사/띄어쓰기/형태소 확인
+- [ ] 조사/띄어쓰기/의존 명사/보조 용언 확인
+- [ ] 다어절 고유명사 줄바꿈 보호 확인
+- [ ] runtime-generated/hardcoded text 확인
 - [ ] 실제 렌더러 폭 확인
 - [ ] encoded byte budget 확인
 - [ ] record/block alignment 확인
 - [ ] pointer/offset/size 확인
+- [ ] decoded/raw size 및 raw/packed descriptor 확인
 - [ ] 글리프 plan 및 실제 슬롯 확인
-- [ ] 그래픽 palette/CLUT/index 확인
+- [ ] 그래픽 palette/CLUT/index 및 target-revision layout 확인
+- [ ] 재사용 자산 호환성과 verified lineage 확인
 - [ ] 압축 descriptor/span 확인
 - [ ] archive entry/order 확인
 - [ ] LBA/FST/physical layout 확인
 - [ ] readback hash 확인
 - [ ] 보존 영역 hash 확인
-- [ ] runtime smoke 테스트
-- [ ] canonical 승격 후에만 패치 제작
+- [ ] RC가 최신 source 기준인지 확인
+- [ ] runtime smoke 시 cold boot/save-state provenance 확인
+- [ ] canonical 승격 후 retail→canonical 패치 제작 및 decode 검증
 
 이 체크리스트 중 런타임 안전 관련 항목을 “번역만 바꿨으니 괜찮다”는 이유로 생략하지 않는다.

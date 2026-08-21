@@ -1,6 +1,6 @@
 {
   "name": "kr-patch-qa",
-  "version": "1.1.1",
+  "version": "1.2.0",
   "description": "에뮬레이터 실행이나 실제 플레이 없이도 SOURCE/STATIC/READBACK QA를 수행할 수 있는 정적 우선 레트로 게임 한글화 QA Agent Skill. 필요할 때 emucap으로 런타임 검증을 확장합니다.",
   "author": {
     "name": "GagnonJung",
@@ -22,7 +22,7 @@
   "interface": {
     "displayName": "KR Patch QA",
     "shortDescription": "Static-first Korean localization QA",
-    "longDescription": "Static-first Korean retro-game localization QA that works without emulator launch or gameplay through source QA, binary/layout/glyph/graphics/compression/archive validation, and final-image readback. emucap can optionally extend the workflow with runtime regression testing, canonical promotion, and release gating evidence.",
+    "longDescription": "Static-first Korean retro-game localization QA covering language quality, translation approval state, runtime-generated text, glyph/graphics safety, decoded/raw-size and packed-layout contracts, final-image readback, RC freshness, and release gating without requiring gameplay. emucap can optionally add cold-boot/save-state-aware runtime regression evidence.",
     "developerName": "GagnonJung",
     "category": "Developer Tools",
     "capabilities": [

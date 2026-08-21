@@ -13,6 +13,9 @@
 공통 규약의 원문은 다음 문서입니다.
 
 - [`LOCALIZATION_QA_STANDARD.md`](LOCALIZATION_QA_STANDARD.md)
+- 현재 표준: **v1.2 / 2026-08-21**
+
+v1.2에는 최근 실제 작업에서 확인된 **decoded/raw-size 런타임 계약, cold-boot/save-state 검증, runtime-generated text inventory, target-revision 자산 추적, 검증 자산 계보, 번역 승인 상태, stale RC/직접 retail 패치 규칙**을 추가했습니다.
 
 프로젝트별 규칙이 이 문서보다 더 엄격하면 **더 엄격한 프로젝트 규칙을 우선**합니다. 다만 원본 보존, 포인터/오프셋/크기, 글리프 커버리지, 압축/할당 스팬, 물리 레이아웃과 같은 런타임 안전 조건은 검증 근거 없이 완화하지 않습니다.
 
@@ -20,16 +23,19 @@
 
 `kr-patch-qa`는 다음 범위를 공통 QA 대상으로 봅니다.
 
-- 한국어 문장부호, 호격 쉼표, 조사, 띄어쓰기, 어절/형태소, 인물별 존대·반말, 용어 통일
-- 실제 렌더러 폭을 기준으로 한 줄바꿈과 표시 영역 검증
+- 한국어 문장부호, 호격 쉼표, 조사, 띄어쓰기, 의존 명사/보조 용언, 어절/형태소, 인물별 존대·반말, 용어 통일
+- 번역 상태(`drafted` / `needs_human_review` / `approved`)와 수정 후 승인 회수 관리
+- 실제 렌더러 폭을 기준으로 한 줄바꿈과 다어절 고유명사 보호
 - 번역문에 필요한 글리프의 매핑 및 활성 슬롯 커버리지
+- table-driven text뿐 아니라 코드/formatter가 만드는 runtime-generated text 누락 검사
 - 폰트/텍스처/팔레트/CLUT/타일 구조와 보호 영역 보존
 - 고정 길이 레코드, 문자열 스팬, 포인터, 오프셋, 정렬, 패딩, 크기 필드 검증
-- 압축 스트림 크기와 실제 할당 스팬/섹터 예약을 분리한 검증
+- 압축 스트림/할당 스팬뿐 아니라 decoded/raw size와 allocator-visible descriptor를 분리한 검증
 - 아카이브, 파일 테이블, FST/LBA 등 물리 배치 회귀 검사
 - 최종 이미지에 실제로 기록된 바이트를 다시 읽는 readback 검증
 - 프리징/크래시 발생 시 last-known-good ↔ first-known-bad 기준의 원인 격리
-- RC 빌드, 런타임 스모크, 캐노니컬 승격, 패치 패키징, 릴리스 단계 구분
+- cold boot / 일반 세이브 / save state provenance를 구분한 런타임 검증
+- stale RC 판정, 캐노니컬 승격, retail→canonical 패치 패키징, 릴리스 단계 구분
 
 ## Agent Skill 설치
 
@@ -390,7 +396,10 @@ tools/register-codex-mcp.ps1
 - `stage.dat`처럼 압축 스트림 크기와 실제 allocation/sector span이 분리된 자산은 재압축 결과가 작아졌다는 이유만으로 known-good allocation floor를 축소하지 않음
 - 텍스트·폰트·그래픽 자체가 정상이어도 압축 descriptor나 물리 통합 변경만으로 특정 장면 전환에서 프리징이 발생할 수 있으므로 계층별로 회귀를 분리
 - 런타임 PASS가 확인된 마지막 정상 빌드와 문제 첫 빌드의 해시를 고정해 원인 범위를 좁힘
+- 같은 한국어 표면문자열을 전역 치환하지 않고 일본어 원문 전체 문장/화자/entry ID를 기준으로 문맥 교정
+- 다어절 고유명사는 내부 공백을 유지한 하나의 조판 보호 단위로 취급
 - 미션 로그·무전·컷신·장소명처럼 같은 표현이 여러 소비 경로에 존재할 수 있으므로 논리 문자열 하나가 아니라 실제 physical consumer를 전수 확인
+- 소스가 바뀐 뒤 이전 ISO/패키지는 stale로 처리하고, 최종 배포 xdelta는 이전 패치 경유가 아니라 retail 원본→최종 canonical로 직접 생성·decode 검증
 - 여러 디스크로 구성된 게임은 디스크별 정적/readback/runtime PASS를 모두 확보한 뒤에만 최종 패치 패키지를 만듦
 
 ### 죠죠의 기묘한 모험 황금의 바람 — 한글화 재현 프레임워크
@@ -411,11 +420,13 @@ tools/register-codex-mcp.ps1
 공통화할 만한 패턴:
 
 - 정적 추정으로 잡았던 폰트 규격이 실기 증거와 충돌하면 기존 가정을 폐기하고 런타임 기준선을 다시 확정
+- canonical unique와 physical occurrence를 분리하고 구조 경계에서 빠진 도달 가능 텍스트까지 모집단에 복원
 - 글리프 저장 포맷과 실제 렌더러가 사용하는 표시 포맷을 분리해 추적
 - 제어코드의 종류·순서·개수를 보호하고 줄바꿈만 허용된 범위에서 이동
 - 동적 치환 토큰의 폭은 정적 추정만으로 PASS 처리하지 않고 런타임 검토 대상으로 유지
-- 자동 QA의 `passed`와 사람의 번역/레이아웃 승인 범위를 분리
+- 자동 QA의 `passed`와 사람의 번역/레이아웃 승인 범위를 분리하고, 승인 후 수정된 항목은 다시 human-review 상태로 되돌림
 - MODE1/2352 변경 섹터는 EDC/ECC를 재생성하고 재추출 byte equality로 검증
+- 전투 초기화 뒤 만든 save state가 구 VDP1/RAM 자산을 복원해 새 디스크 로드를 우회할 수 있으므로 cold boot+일반 세이브 진입으로 최종 확인
 - 실행 결과를 반드시 정확한 빌드 해시와 연결
 
 ### Suzuki Bakuhatsu — PlayStation
@@ -438,6 +449,8 @@ tools/register-codex-mcp.ps1
 - 에뮬레이터 실행 없이도 번역·그래픽의 논리 inventory와 실제 물리 consumer 수를 분리해 정적 QA 수행
 - 통합 VFS의 전체 크기를 유지하고 full VFS roundtrip 및 VFS 바깥 영역 byte identity를 함께 검증
 - 변경 섹터의 EDC/ECC를 다시 계산·검증해 CD 이미지 물리 무결성을 정적 단계에서 확인
+- packed physical window가 맞더라도 decoded raw size / outer raw size / raw descriptor가 바뀌면 allocator/loader 경로에서 프리징할 수 있으므로 별도 계약으로 추적
+- 단순 repack/roundtrip 성공만으로 decoded size나 descriptor 확장을 허용하지 않고, 안전성이 증명되지 않으면 retail 값을 보존
 - 정적 inventory가 전부 PASS여도 실제 플레이에서 별도 UI 소비처의 미번역이나 상태창 진입 프리징이 발견될 수 있으므로 `STATIC_* PASS`를 `RUNTIME_SMOKE PASS`로 승격하지 않음
 - 플레이 제보가 정적 QA와 충돌하면 플레이 증거를 우선해 기존 inventory 경계가 빠뜨린 consumer를 다시 탐색
 - 프리징 원인은 텍스트/폰트/그래픽/VFS 물리 통합 계층으로 분리하고, 한 번에 여러 계층을 재수정하지 않음
@@ -452,6 +465,9 @@ tools/register-codex-mcp.ps1
 - 실제 렌더러의 폭 계산식을 모델링해 문자 수가 아닌 pixel width로 layout QA 수행
 - source-used glyph를 보존하고 실제 미사용 슬롯만 한국어 destination code로 할당
 - 폰트 capacity를 전체 slot 공급량과 현재 corpus demand로 함께 보고
+- 다른 지역판의 XML/offset을 그대로 믿지 않고 일본판 실제 actor/segment 참조로 target-revision 자산 위치를 재확정
+- 전작/OOT 한국어 자산은 dimensions/format/palette semantics가 호환되는 경우에만 재사용하고, MM 일본판 원본을 geometry/format authority로 유지
+- 메시지 TSV 밖에서 formatter/decoder가 직접 만드는 `시간/분/루피` 같은 dynamic unit도 별도 runtime-generated text inventory로 검사
 - Yaz0 같은 압축 데이터는 decoded byte length와 stored compressed bytes를 분리하고 즉시 decompression round trip 검증
 - 최종 ROM에서 변경 segment를 다시 추출·재파싱해 source→build→ROM→extract 경로를 닫음
 - 에뮬레이터를 실행하지 않은 정적 빌드는 `runtime smoke pending`으로 명확히 유지
