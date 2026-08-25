@@ -13,9 +13,9 @@
 공통 규약의 원문은 다음 문서입니다.
 
 - [`LOCALIZATION_QA_STANDARD.md`](LOCALIZATION_QA_STANDARD.md)
-- 현재 표준: **v1.2 / 2026-08-21**
+- 현재 표준: **v1.3 / 2026-08-25**
 
-v1.2에는 최근 실제 작업에서 확인된 **decoded/raw-size 런타임 계약, cold-boot/save-state 검증, runtime-generated text inventory, target-revision 자산 추적, 검증 자산 계보, 번역 승인 상태, stale RC/직접 retail 패치 규칙**을 추가했습니다.
+v1.3에는 최근 실제 작업에서 확인된 **coverage scope가 붙은 완료율, 병렬 번역 single-writer 통합, 화자 evidence provenance, 일본어 번역투 자연화, encoding-aware 잔존 일본어 감사, active glyph mapping 안정성, overlay parent-SHA 의존성, dynamic particle/unit QA**를 추가했습니다. v1.2의 decoded/raw-size, cold-boot/save-state, runtime-generated text, stale RC/retail→canonical 패치 규칙도 그대로 유지합니다.
 
 프로젝트별 규칙이 이 문서보다 더 엄격하면 **더 엄격한 프로젝트 규칙을 우선**합니다. 다만 원본 보존, 포인터/오프셋/크기, 글리프 커버리지, 압축/할당 스팬, 물리 레이아웃과 같은 런타임 안전 조건은 검증 근거 없이 완화하지 않습니다.
 
@@ -23,16 +23,20 @@ v1.2에는 최근 실제 작업에서 확인된 **decoded/raw-size 런타임 계
 
 `kr-patch-qa`는 다음 범위를 공통 QA 대상으로 봅니다.
 
-- 한국어 문장부호, 호격 쉼표, 조사, 띄어쓰기, 의존 명사/보조 용언, 어절/형태소, 인물별 존대·반말, 용어 통일
+- 완료율이 어느 extractor/workset/resource family 기준인지 명시하고 unique/physical/unscanned 범위를 분리
+- 한국어 문장부호, 조사, 띄어쓰기, 의존 명사/보조 용언, 일본어 번역투 자연화, 인물별 존대·반말, 용어 통일
 - 번역 상태(`drafted` / `needs_human_review` / `approved`)와 수정 후 승인 회수 관리
-- 실제 렌더러 폭을 기준으로 한 줄바꿈과 다어절 고유명사 보호
-- 번역문에 필요한 글리프의 매핑 및 활성 슬롯 커버리지
-- table-driven text뿐 아니라 코드/formatter가 만드는 runtime-generated text 누락 검사
+- 화자/청자 metadata의 직접 증거와 자동 규칙에서 파생된 evidence provenance 분리
+- 실제 렌더러 폭을 기준으로 한 줄바꿈, approved control transform, 다어절 고유명사 보호
+- 번역문에 필요한 글리프의 커버리지뿐 아니라 baseline→candidate active code→glyph mapping 안정성 검증
+- table-driven text뿐 아니라 코드/formatter가 만드는 runtime-generated text, 동적 단위/조사 누락 검사
+- 잔존 일본어 후보를 CP932 바이트 히트만으로 판정하지 않고 실제 runtime codec으로 역검증
 - 폰트/텍스처/팔레트/CLUT/타일 구조와 보호 영역 보존
-- 고정 길이 레코드, 문자열 스팬, 포인터, 오프셋, 정렬, 패딩, 크기 필드 검증
-- 압축 스트림/할당 스팬뿐 아니라 decoded/raw size와 allocator-visible descriptor를 분리한 검증
-- 아카이브, 파일 테이블, FST/LBA 등 물리 배치 회귀 검사
+- derived overlay의 parent/base SHA와 dependency order를 기록해 stale overlay 재사용 방지
+- 고정 길이 레코드, 문자열 스팬, pointer, physical window, decoded/raw size, allocator-visible descriptor 검증
+- 압축/아카이브, 파일 테이블, FST/LBA 등 물리 배치 회귀 검사
 - 최종 이미지에 실제로 기록된 바이트를 다시 읽는 readback 검증
+- 병렬 번역 시 canonical single-writer 통합과 통합 후 global QA
 - 프리징/크래시 발생 시 last-known-good ↔ first-known-bad 기준의 원인 격리
 - cold boot / 일반 세이브 / save state provenance를 구분한 런타임 검증
 - stale RC 판정, 캐노니컬 승격, retail→canonical 패치 패키징, 릴리스 단계 구분
@@ -371,6 +375,7 @@ tools/register-codex-mcp.ps1
 | Sega Saturn | Slayers Royal |
 | PlayStation | Suzuki Bakuhatsu |
 | PlayStation | Getter Robo Daikessen! |
+| PlayStation | Persona 2: Innocent Sin |
 | Nintendo 64 | The Legend of Zelda: Majora's Mask |
 
 이 목록은 해당 게임의 구현 세부를 다른 플랫폼에 그대로 적용한다는 의미가 아닙니다. 공통 규칙은 실제 저장·주소 지정·렌더링·런타임 소비 구조가 같은 경우에만 재사용하고, 플랫폼별 세부 검증은 해당 구조에 맞게 치환합니다.
@@ -396,7 +401,9 @@ tools/register-codex-mcp.ps1
 - `stage.dat`처럼 압축 스트림 크기와 실제 allocation/sector span이 분리된 자산은 재압축 결과가 작아졌다는 이유만으로 known-good allocation floor를 축소하지 않음
 - 텍스트·폰트·그래픽 자체가 정상이어도 압축 descriptor나 물리 통합 변경만으로 특정 장면 전환에서 프리징이 발생할 수 있으므로 계층별로 회귀를 분리
 - 런타임 PASS가 확인된 마지막 정상 빌드와 문제 첫 빌드의 해시를 고정해 원인 범위를 좁힘
+- 기존 active font slot을 새 글리프로 덮어쓰면 missing glyph 0이어도 전역 문자 오염이 생길 수 있으므로 baseline code→glyph mapping을 보존하고 free slot 확장을 우선
 - 같은 한국어 표면문자열을 전역 치환하지 않고 일본어 원문 전체 문장/화자/entry ID를 기준으로 문맥 교정
+- 자동 어투 교정기가 과거에 써 넣은 화자 metadata를 독립 증거로 재사용하지 않고 대본/장면 순서 같은 직접 evidence provenance로 재확정
 - 다어절 고유명사는 내부 공백을 유지한 하나의 조판 보호 단위로 취급
 - 미션 로그·무전·컷신·장소명처럼 같은 표현이 여러 소비 경로에 존재할 수 있으므로 논리 문자열 하나가 아니라 실제 physical consumer를 전수 확인
 - 소스가 바뀐 뒤 이전 ISO/패키지는 stale로 처리하고, 최종 배포 xdelta는 이전 패치 경유가 아니라 retail 원본→최종 canonical로 직접 생성·decode 검증
@@ -425,6 +432,8 @@ tools/register-codex-mcp.ps1
 - 제어코드의 종류·순서·개수를 보호하고 줄바꿈만 허용된 범위에서 이동
 - 동적 치환 토큰의 폭은 정적 추정만으로 PASS 처리하지 않고 런타임 검토 대상으로 유지
 - 자동 QA의 `passed`와 사람의 번역/레이아웃 승인 범위를 분리하고, 승인 후 수정된 항목은 다시 human-review 상태로 되돌림
+- base 대사/그래픽 위에 palette·UI overlay를 겹치는 경우 overlay input SHA를 기록하고 parent asset이 바뀌면 stale overlay를 자동 거부
+- 최신 TM으로 하위 AREA/SPOT을 다시 빌드한 뒤 지명 그래픽 등 상위 overlay를 dependency order대로 다시 적용해 과거 대사/그래픽 롤백을 방지
 - MODE1/2352 변경 섹터는 EDC/ECC를 재생성하고 재추출 byte equality로 검증
 - 전투 초기화 뒤 만든 save state가 구 VDP1/RAM 자산을 복원해 새 디스크 로드를 우회할 수 있으므로 cold boot+일반 세이브 진입으로 최종 확인
 - 실행 결과를 반드시 정확한 빌드 해시와 연결
@@ -453,7 +462,19 @@ tools/register-codex-mcp.ps1
 - 단순 repack/roundtrip 성공만으로 decoded size나 descriptor 확장을 허용하지 않고, 안전성이 증명되지 않으면 retail 값을 보존
 - 정적 inventory가 전부 PASS여도 실제 플레이에서 별도 UI 소비처의 미번역이나 상태창 진입 프리징이 발견될 수 있으므로 `STATIC_* PASS`를 `RUNTIME_SMOKE PASS`로 승격하지 않음
 - 플레이 제보가 정적 QA와 충돌하면 플레이 증거를 우선해 기존 inventory 경계가 빠뜨린 consumer를 다시 탐색
+- CP932로는 일본어처럼 보이지만 실제 한국어 carrier/codebook으로는 정상 한글인 raw byte false positive를 역매핑해 분리하고, 광범위한 ignore 규칙은 만들지 않음
 - 프리징 원인은 텍스트/폰트/그래픽/VFS 물리 통합 계층으로 분리하고, 한 번에 여러 계층을 재수정하지 않음
+
+### Persona 2: Innocent Sin — PlayStation
+
+공통화할 만한 패턴:
+
+- `10,283/10,283 대사 그룹`처럼 100% 수치를 낼 때도 **dialogue workset 범위의 100%**임을 명시하고 map/system/battle/graphics/executable string은 별도 후속 모집단으로 남김
+- unique dialogue group과 physical dialogue record를 함께 집계해 논리 번역률과 실제 소비 레코드 커버리지를 분리
+- 병렬 번역 세션은 독립 전용 폴더에 draft TSV만 생성하고 canonical workset/apply/build/commit을 건드리지 않는 single-writer 구조 사용
+- 메인 통합 세션만 신규 그룹을 canonical에 적용하고 반복 그룹은 기존 번역을 우선한 뒤 보호 토큰/특수문자/폭/overflow 전역 QA를 재실행
+- 일본어 쉼표·마침표를 기계적으로 복제하지 않고 한국어 자연스러운 어순/호흡으로 다듬되 의미와 원작 용어를 보존
+- 퍼즐 오답/정답 문구처럼 **의도적 의미 차이**가 게임 로직에 영향을 주는 텍스트는 유사 문장이라고 통일하지 않고 distinction을 보존
 
 ### The Legend of Zelda: Majora's Mask — Nintendo 64
 
@@ -462,12 +483,15 @@ tools/register-codex-mcp.ps1
 - 카트리지 기반에서도 ROM byte order, DMA table, VROM/ROM 경계, raw/compressed 상태를 분리해 검증
 - 메시지 추출/컴파일러의 blank-translation round trip을 byte-identical로 먼저 증명
 - 비텍스트 control/button token의 종류·순서·개수를 컴파일 단계에서 강제
+- 한국어 조판 때문에 원문 newline 위치를 바꿔야 할 때 `OMIT/INSERT NEWLINE` 같은 명시적 transform을 사용하고 compiler/layout QA가 같은 예외 계약을 공유
 - 실제 렌더러의 폭 계산식을 모델링해 문자 수가 아닌 pixel width로 layout QA 수행
 - source-used glyph를 보존하고 실제 미사용 슬롯만 한국어 destination code로 할당
 - 폰트 capacity를 전체 slot 공급량과 현재 corpus demand로 함께 보고
 - 다른 지역판의 XML/offset을 그대로 믿지 않고 일본판 실제 actor/segment 참조로 target-revision 자산 위치를 재확정
 - 전작/OOT 한국어 자산은 dimensions/format/palette semantics가 호환되는 경우에만 재사용하고, MM 일본판 원본을 geometry/format authority로 유지
 - 메시지 TSV 밖에서 formatter/decoder가 직접 만드는 `시간/분/루피` 같은 dynamic unit도 별도 runtime-generated text inventory로 검사
+- 동적 지명 뒤 `로/으로`처럼 받침에 따라 달라지는 조사를 고정하지 않고, 가능한 경우 모든 후보에 성립하는 문장 구조로 바꾸거나 runtime particle logic을 별도 검증
+- fixed-row 동적 지명은 row byte limit뿐 아니라 `동적 값 + 주변 문장` 전체의 최장 렌더 폭까지 합성 검증
 - Yaz0 같은 압축 데이터는 decoded byte length와 stored compressed bytes를 분리하고 즉시 decompression round trip 검증
 - 최종 ROM에서 변경 segment를 다시 추출·재파싱해 source→build→ROM→extract 경로를 닫음
 - 에뮬레이터를 실행하지 않은 정적 빌드는 `runtime smoke pending`으로 명확히 유지

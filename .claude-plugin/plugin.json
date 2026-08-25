@@ -1,6 +1,6 @@
 {
   "name": "kr-patch-qa",
-  "version": "1.2.0",
+  "version": "1.3.0",
   "description": "에뮬레이터 실행이나 실제 플레이 없이도 SOURCE/STATIC/READBACK QA를 수행할 수 있는 정적 우선 레트로 게임 한글화 QA Agent Skill. 필요할 때 emucap으로 런타임 검증을 확장합니다.",
   "author": {
     "name": "GagnonJung"

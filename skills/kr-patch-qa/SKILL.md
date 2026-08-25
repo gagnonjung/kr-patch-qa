@@ -37,13 +37,17 @@ Do not copy generic methodology into this skill when `create-kr-patch` already o
 1. Identify the exact source revision and last-known-good baseline.
 2. Read the project-specific instructions and the relevant sections of `../../LOCALIZATION_QA_STANDARD.md`.
 3. Keep source-language QA, static binary QA, RC build, final-image readback, runtime smoke, canonical promotion, patch packaging, and release as separate states.
-4. Verify Korean punctuation, particles, spacing, dependent-noun/auxiliary-verb usage, voice/register, terminology, protected multiword proper nouns, renderer-width line breaks, and glyph coverage against the actual game consumer.
-5. Distinguish canonical unique text, physical occurrences, translation approval state, and runtime-generated/hardcoded text. Do not treat a drafted or statically passing corpus as human-approved or runtime-complete.
-6. Verify changed binary structures at their real consumer boundary: spans, records, pointers, sizes, decoded/raw size, raw/packed descriptors, allocator-visible sizes, alignment, compression descriptors, allocation spans, archives, graphics structures, and physical layout as applicable.
-7. Re-read the final ROM/disc/archive output and verify changed and protected regions before treating it as an RC. If source/translation/font/graphics/binary inputs change afterward, mark that RC stale.
-8. If a freeze/crash appears, preserve last-known-good and first-known-bad identities and isolate text, glyph/font, graphics, archive/compression, and physical integration rather than changing several layers at once.
-9. For runtime gates, record whether the path came from cold boot, a normal game save, or a save state. Do not use a post-initialization save state as the sole proof for assets that load only during boot/scene/battle initialization.
-10. Promote only the exact RC that passed the required runtime smoke path. Build distributable patches only from the canonical result, preferably as a direct supported-retail-to-canonical patch with encode/decode verification.
+4. Verify Korean punctuation, particles, spacing, dependent-noun/auxiliary-verb usage, Japanese-translationese naturalness, voice/register, terminology, protected multiword proper nouns, renderer-width line breaks, and glyph coverage against the actual game consumer. Treat naturalness regexes as candidate generators, not blind replacements.
+5. Distinguish coverage scope, canonical unique text, physical occurrences, unscanned/excluded categories, translation approval state, and runtime-generated/hardcoded text. Never report a workset/extractor as project-wide 100% without evidence that all user-facing consumer families are in scope.
+6. Track speaker/listener evidence provenance. Do not treat metadata injected by a prior normalization rule as independent source evidence, and keep ambiguous repeated lines unconfirmed until direct context resolves them.
+7. Verify changed binary structures at their real consumer boundary: spans, records, physical windows, pointers, sizes, decoded/raw size, raw/packed descriptors, allocator-visible sizes, alignment, compression descriptors, allocation spans, archives, graphics structures, and physical layout as applicable.
+8. Verify glyph mapping identity as well as missing-glyph count. Prefer free-slot extension over reassigning an active code, and inspect baseline-to-candidate active code→glyph mapping diffs.
+9. Re-read the final ROM/disc/archive output and verify changed and protected regions before treating it as an RC. Derived overlays must identify their parent/base hash; if a lower layer changes, reject or rebuild stale overlays and then reapply them in dependency order.
+10. For residual Japanese scans, reverse-decode findings with the actual runtime codec/codebook before classifying them. Do not suppress Korean carrier false positives with broad ignore rules.
+11. When parallel translation is used, keep canonical integration single-writer: workers produce isolated drafts, and one integration session applies only reviewed/new groups then reruns global QA.
+12. If a freeze/crash appears, preserve last-known-good and first-known-bad identities and isolate text, glyph/font, graphics, archive/compression, and physical integration rather than changing several layers at once.
+13. For runtime gates, record whether the path came from cold boot, a normal game save, or a save state. Do not use a post-initialization save state as the sole proof for assets that load only during boot/scene/battle initialization.
+14. Promote only the exact RC that passed the required runtime smoke path. Build distributable patches only from the canonical result, preferably as a direct supported-retail-to-canonical patch with encode/decode verification.
 
 ## Runtime verification with emucap
 
@@ -62,4 +66,4 @@ Typical composition:
 
 ## Completion rule
 
-Never report the entire localization as PASS from one narrower check. State the scope of every result explicitly. `STATIC_BINARY_QA PASS` does not imply `RUNTIME_SMOKE PASS`, and an RC does not become canonical until the project's required runtime confirmation has passed on that exact candidate.
+Never report the entire localization as PASS from one narrower check. State the coverage scope, excluded/unscanned populations, and evidence level of every result explicitly. `10,283/10,283 dialogue groups`, `STATIC_BINARY_QA PASS`, or `raw SJIS residual 0` each prove only their named scope; none implies project-wide or runtime completion. An RC does not become canonical until the project's required runtime confirmation has passed on that exact candidate.

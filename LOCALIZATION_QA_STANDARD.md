@@ -1,7 +1,7 @@
 # Game Localization Common QA & Runtime Safety Standard
 
-Version: 1.2
-Updated: 2026-08-21
+Version: 1.3
+Updated: 2026-08-25
 Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 이 문서는 플랫폼·게임별 세부 규칙보다 상위에 두는 **공통 QA / 바이너리 안전 / 런타임 회귀 방지 규약**이다.
@@ -105,6 +105,16 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 자동 QA가 모두 통과해도 `drafted`가 사람 검수를 자동으로 의미하지 않는다. 이미 `approved`된 항목이라도 번역문, 원문 해석, 제어코드, 레이아웃 또는 소비 구조가 바뀌면 다시 `needs_human_review`로 돌린다.
 
+### 2.7 모집단 스코프와 `100%` 표기
+
+완료율은 반드시 **어떤 extractor / workset / resource family / physical population을 기준으로 한 수치인지** 함께 적는다.
+
+- `대사 100%`는 대사 extractor가 수집한 모집단 100%일 뿐, 디스크 전체 일본어 0건을 의미하지 않는다.
+- dialogue / map / system UI / battle / graphics / executable table / runtime-generated text처럼 별도 소비 계층이 있으면 범위를 분리해 기록한다.
+- `unique group` 수와 `physical record/occurrence` 수를 가능한 한 함께 집계한다.
+- 아직 조사하지 않은 계층, 명시적 제외, 개발용/비사용 레코드는 `unscanned / excluded / non-user-facing`처럼 별도 상태로 남긴다.
+- 프로젝트 전체 `100%`를 선언하려면 알려진 사용자 표시 소비 계층의 합집합이 모두 scope에 포함됐다는 근거가 있어야 한다.
+
 ---
 
 ## 3. 화자·청자·어투 QA
@@ -132,6 +142,16 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - 인명, 조직명, 기술명, 지명, 장비명, UI명은 소비처 전체에서 전수 검사한다.
 - 한 번 수정한 용어가 legacy TM이나 duplicate table에서 다시 살아나지 않게 한다.
 - 원작·공식 작품에 이미 정착된 명칭이 있으면 프로젝트 용어 정책에서 그 명칭을 우선 검토하고, 임의 번역명은 별도 근거 없이 새 canonical로 만들지 않는다.
+
+### 3.4 화자/문맥 증거의 출처를 구분한다
+
+화자·청자·관계성 metadata에는 **어디서 나온 정보인지 provenance**를 붙이는 것을 권장한다.
+
+- 게임 내부 speaker table, 장면 순서, 공식/보조 대본 직접 대응, 수동 확정 등은 근거 수준을 구분한다.
+- 과거 자동 정규화/어투 교정 스크립트가 써 넣은 speaker metadata를 독립적인 화자 증거로 다시 사용하지 않는다.
+- 변환 결과가 자기 자신을 근거로 삼는 순환 증거를 만들지 않는다.
+- 현재 metadata와 원문/대본의 직접 증거가 충돌하면 transformation history보다 직접 source evidence를 우선해 재판정한다.
+- ambiguous한 반복 문구가 여러 화자에게 대응되면 추측으로 확정하지 않고 `ambiguous / unconfirmed`로 남긴다.
 
 ---
 
@@ -174,6 +194,24 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - 의미 없는 일본어식 직역 어순, 일본어식 존대, 중복 표현을 제거한다.
 - 반복 단어, 탈락된 주어/목적어, 비문 후보를 기계 탐지 후 사람이 판정한다.
 
+### 4.3 일본어 번역투 자연화
+
+다음 유형은 한국어에서 번역투가 되기 쉬우므로 **후보화해서 문맥 검토**한다.
+
+- 수혜형/겸양형의 기계적 `~해 주다`, `~하게 해 주다`, `~させてもらう` 계열
+- 완료/유감 상의 기계적 `~해 버리다`
+- `이쪽/저쪽/그쪽` 같은 지시어의 직역
+- 원문 어순을 따라 목적어/주어가 뒤늦게 붙는 후치 어순
+- `~인 모양이다`, `~하게 될지도 모른다` 같은 일본어식 설명 골격
+- 한국어 호흡보다 과도한 쉼표와 원문 줄바꿈의 기계적 복제
+
+다만 이 목록을 전역 치환 규칙으로 쓰지 않는다.
+
+- 원문의 정보량과 감정 강도를 유지한다.
+- 장르적 과장어법, 악역 말투, 사투리, 외국인 말투, 캐릭터 고유 장음/반복은 한국어에서도 캐릭터성이 성립하면 보존한다.
+- `~해 주마`, `그쪽`, `이쪽`처럼 한국어에서도 자연스러운 문맥은 유지한다.
+- 자연스러움 교정으로 encoded size/line width가 달라지면 레이아웃·바이너리 QA를 다시 통과시킨다.
+
 ---
 
 ## 5. 줄바꿈·폭·화면 레이아웃 QA
@@ -210,6 +248,9 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - 줄바꿈 토큰은 한국어 레이아웃을 위해 이동할 수 있는 경우에도 다른 보호 토큰을 넘어 재배치하지 않는다.
 - 동적 치환 토큰의 실제 표시 폭을 모르면 정적 추정만으로 레이아웃 PASS를 확정하지 않는다.
 - 컴파일러/빌더는 가능한 경우 보호 토큰 불일치를 release-blocking failure로 처리한다.
+- 한국어 레이아웃 때문에 줄바꿈의 위치·개수를 의도적으로 바꿔야 한다면 **명시적 approved transform**으로 기록한다. 예: `OMIT/INSERT NEWLINE`, per-entry allowlist, stable ID 기반 break override.
+- 이런 예외는 컴파일러와 QA가 **같은 선언 데이터/규칙**을 읽어야 하며, 빌더만 허용하고 검증기는 원문 signature만 비교하는 식으로 계약이 갈라지면 안 된다.
+- 페이지 전환, delay, 음성/타이밍 경계는 단순 줄바꿈보다 강한 보호 토큰으로 취급하고, 별도 근거 없이 이동·삭제하지 않는다.
 
 ---
 
@@ -237,6 +278,11 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
    - 실제 화면/VRAM/RAM 캡처의 바이트나 런타임 로드 경로로 진짜 소비 자산을 확인한다.
    - 공유 슬롯을 다른 화면도 사용하는 경우 해당 consumer 전체의 문자 집합을 합쳐 충돌 여부를 검사한다.
    - 한 화면에서만 성공하는 isolated test용 slot reuse는 다른 consumer를 깨뜨릴 수 있으므로 release 근거로 사용하지 않는다.
+9. **missing glyph 0만으로 mapping 회귀가 없다고 판정하지 않는다.**
+   - 이미 사용 중인 code/slot을 다른 글자로 재할당하면 기존 문자열이 전부 다른 한글로 깨질 수 있다.
+   - 폰트를 확장할 때는 검증된 기존 code→glyph mapping을 prefix/identity 형태로 보존하고, 가능하면 미사용 free slot에 새 글리프를 추가한다.
+   - baseline→candidate의 active code→character mapping diff를 산출해 의도한 슬롯 외 변화가 0인지 검사한다.
+   - 사용 중인 슬롯을 재배정해야 한다면 그 슬롯을 소비하는 모든 문자열/그래픽/runtime table을 함께 재빌드하고 전수 검증해야 한다.
 
 ---
 
@@ -305,6 +351,8 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 예: 쉼표 1바이트 추가가 4바이트 정렬 경계를 넘겨 레코드를 4바이트 키울 수 있다.
 
 **capacity 초과는 1바이트라도 FAIL이다.**
+
+또한 parser가 계산한 논리 EOF가 반드시 런타임 소비 경계라고 가정하지 않는다. 일부 포맷은 descriptor가 허용한 physical window, 후속 NUL padding, 고정 slot tail을 정상적으로 참조한다. 실제 pointer/descriptor/consumer가 허용하는 범위를 먼저 규명하고, 단순한 논리 EOF 밖이라는 이유만으로 정상 레코드를 corruption으로 분류하지 않는다.
 
 ## 8.3 포인터·오프셋·크기 테이블
 
@@ -400,6 +448,11 @@ Mode2/2352, XA/STR, CD-DA 혼합 트랙처럼 섹터 구조 자체가 재생/스
 5. 수정 스크립트는 **재실행 시 change 0**이 되는 멱등 상태를 목표로 한다.
 6. 같은 문구/그래픽이라도 소비처별 glyph index, codebook, palette, runtime family가 다르면 하나의 재생성 자산으로 강제로 통일하지 않는다.
 7. 이미 런타임 PASS한 복제 자산이 있다면 새로 재인코딩한 “동일 내용” 자산보다 그 **검증된 바이트 계보(lineage)**를 우선한다. 다른 consumer에 복사할 때도 해당 consumer의 인코딩/로더 호환성을 별도로 증명한다.
+8. base asset 위에 palette/UI/graphics/text overlay를 순차 합성하는 경우 각 derived overlay가 **어떤 parent SHA에서 만들어졌는지** 기록한다.
+   - parent/base가 바뀌면 기존 overlay는 stale로 간주하고 자동 거부하거나 재생성한다.
+   - 하위 레이어를 다시 빌드한 뒤 상위 overlay를 재적용하지 않으면 최신 번역을 되돌리거나 과거 그래픽을 되살릴 수 있다.
+   - 최종 staging은 dependency order와 parent hash를 검증해 최신 source/TM/asset이 모두 포함됐음을 증명한다.
+9. builder와 verifier가 특수 예외를 각자 하드코딩하지 않는다. `extra_zero_bytes`, approved relocation, break override, expected parent hash 같은 예외는 가능한 한 **같은 선언 데이터**를 공유한다.
 
 ## 8.9 원자적 빌드와 readback
 
@@ -445,6 +498,13 @@ translation table에 모든 사용자 표시 문자열이 존재한다고 가정
 - 런타임 formatter가 조합하는 접미사
 
 등은 실행 코드, overlay, formatter, decoder 안에 하드코딩될 수 있다. 정적 inventory에는 **table-driven text와 runtime-generated text를 별도 모집단**으로 기록하고, 알려진 dynamic control path를 전수 조사한다.
+
+한국어에서는 동적 치환 뒤 조사도 별도 QA 대상이다.
+
+- 동적으로 들어오는 명사에 `은/는`, `이/가`, `을/를`, `으로/로`를 고정해서 붙이면 받침 유무에 따라 틀릴 수 있다.
+- runtime particle selector를 구현하기 어렵다면 모든 후보에 성립하는 조사/문장 구조로 재작성하는 방법을 우선 검토한다. 예: `X로 날아가겠습니까?` 대신 문맥상 가능한 `X에 날아가겠습니까?`.
+- fixed-row 동적 지명/아이템 테이블은 row byte capacity뿐 아니라 **동적 값+주변 문장 전체의 최장 렌더 폭**을 합성해 검사한다.
+- runtime-generated 단위가 이미 `개/분/초` 등을 붙인다면 번역문에서 같은 단위를 다시 붙여 중복되지 않는지 확인한다.
 
 ---
 
@@ -516,6 +576,15 @@ translation table에 모든 사용자 표시 문자열이 존재한다고 가정
 - 반복어/비문 후보
 - 금지 문자열/깨진 제어코드
 
+### 잔존 일본어 스캐너
+
+바이너리에서 CP932/SJIS처럼 보이는 바이트를 찾았다는 이유만으로 곧바로 `일본어 잔존`으로 판정하지 않는다.
+
+- 커스텀 한글 carrier/codebook은 우연히 유효한 CP932 문자열로도 해석될 수 있다.
+- 후보 바이트를 프로젝트의 **실제 runtime codec / glyph reverse map**으로 다시 해독해 사용자에게 보이는 문자가 무엇인지 확인한다.
+- false positive는 광범위한 문자 범위/regex ignore로 숨기지 않고 exact raw sequence, stable entry ID, verified Korean mapping처럼 좁은 근거로 처리한다.
+- 반대로 `raw SJIS hit 0`만으로 완료 처리하지 않는다. 그래픽, runtime-generated text, alternate codebook, compressed/embedded consumer는 별도 모집단으로 검사한다.
+
 ### 레이아웃
 
 - line width
@@ -585,6 +654,19 @@ translation table에 모든 사용자 표시 문자열이 존재한다고 가정
 7. `PATCH_PACKAGE`
 8. `RELEASE`
 
+### 12.1 병렬 번역/QA의 single-writer 통합
+
+대규모 번역을 여러 세션/에이전트로 나눌 때는 canonical workset에 대한 **single-writer 원칙**을 권장한다.
+
+- 병렬 작업자는 각자 독립된 draft/source/batch 영역만 수정하고 canonical workset, shared batch 번호, build output을 직접 갱신하지 않는다.
+- canonical 적용, global QA, build, commit/push는 메인 통합 세션 하나가 담당한다.
+- 병렬 작업자는 현재 미번역/미처리 그룹만 작업하고, 이미 canonical에 존재하는 반복 그룹을 임의로 덮어쓰지 않는다.
+- 통합 시 stable group/entry ID로 신규 항목만 합치고, 반복 항목은 기존 canonical을 우선하되 명시적 review가 있을 때만 교체한다.
+- 각 worker는 배정 모집단, 실제 처리 수, dummy/0건, 새 용어/문맥 주의점을 보고한다.
+- 모든 병렬 결과를 합친 뒤 보호 토큰, 특수문자 signature, line width, overflow, 용어/화자 일관성 같은 **전역 QA를 다시 실행**한다.
+
+이 구조는 번역 속도를 높이기 위한 것이지 canonical ownership과 검증 책임을 분산시키기 위한 것이 아니다.
+
 ### RC와 canonical 구분
 
 - RC는 테스트용이다.
@@ -605,16 +687,21 @@ translation table에 모든 사용자 표시 문자열이 존재한다고 가정
 
 - source path + SHA-256
 - source commit/revision 또는 번역/자산 입력의 기준 식별자
+- coverage scope/extractor/workset 이름과 unique/physical 모집단 수
+- unscanned / excluded / non-user-facing 범위
+- 화자/문맥 metadata의 evidence provenance 요약
 - output path + SHA-256
 - file size
 - changed logical entry count
 - changed physical consumer count
 - overflow count
-- missing glyph count
+- missing glyph count 및 active code→glyph mapping diff
 - layout failure count
+- residual Japanese scanner의 confirmed / false-positive / unresolved 수
 - pointer/LBA/FST difference count
 - overlap/out-of-range count
 - preserved region hashes
+- derived overlay의 parent/base SHA 및 stale 여부
 - static QA status
 - runtime smoke status
 - runtime test provenance(cold boot / 일반 세이브 / save state와 생성 빌드)
@@ -735,16 +822,19 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 
 한글화의 특정 단계가 `완료`이려면 최소한 다음이 만족돼야 한다.
 
+- 완료율/누락 0의 **coverage scope가 명시**되고 unscanned/excluded 범위가 별도 기록됨
 - 번역 누락 0 또는 명시된 보류 목록 존재
 - 필요한 사람 검수/승인 상태가 명시됨
 - table-driven 및 known runtime-generated text 누락 0 또는 명시된 보류 목록 존재
-- 용어/화자/어투 QA PASS
-- 한국어 문장부호/조사/띄어쓰기/줄바꿈 QA PASS
+- 용어/화자/어투 QA PASS, 화자 evidence provenance의 미해결 충돌 0
+- 한국어 문장부호/조사/띄어쓰기/줄바꿈 및 일본어 번역투 자연화 QA PASS
 - 화면 폭 overflow 0
 - byte/block overflow 0
-- missing glyph 0
+- missing glyph 0 및 의도하지 않은 active code→glyph mapping 변화 0
+- 잔존 일본어 스캐너의 unresolved finding 0
 - 포인터/오프셋/크기 및 decoded/raw-size 계약 검증 PASS
 - 압축/아카이브 무결성 PASS
+- derived overlay/base lineage가 최신 source 기준이며 stale dependency 0
 - 물리 layout overlap/out-of-range 0
 - 보존 대상 회귀 0
 - 빌드 readback PASS
@@ -759,27 +849,33 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 
 - [ ] 원본 SHA / target revision 확인
 - [ ] 번역 원문과 문맥 guard 확인
+- [ ] 완료율의 coverage scope / unscanned / excluded 범위 확인
 - [ ] canonical unique / physical occurrence 모집단 확인
 - [ ] 번역 승인 상태 확인
-- [ ] 화자/청자/어투 확인
+- [ ] 화자/청자/어투와 evidence provenance 확인
 - [ ] 원작/공식 용어 및 중복 소비처 전수 확인
 - [ ] 문장부호 정책 확인
 - [ ] 조사/띄어쓰기/의존 명사/보조 용언 확인
+- [ ] 일본어 번역투 자연화 후보 수동 판정
 - [ ] 다어절 고유명사 줄바꿈 보호 확인
-- [ ] runtime-generated/hardcoded text 확인
+- [ ] approved newline/control transform 확인
+- [ ] runtime-generated/hardcoded text 및 동적 조사/단위 확인
 - [ ] 실제 렌더러 폭 확인
 - [ ] encoded byte budget 확인
-- [ ] record/block alignment 확인
+- [ ] record/block alignment 및 실제 physical window 확인
 - [ ] pointer/offset/size 확인
 - [ ] decoded/raw size 및 raw/packed descriptor 확인
-- [ ] 글리프 plan 및 실제 슬롯 확인
+- [ ] 글리프 plan / 실제 슬롯 / active mapping diff 확인
+- [ ] 잔존 일본어 후보를 실제 runtime codec으로 재판정
 - [ ] 그래픽 palette/CLUT/index 및 target-revision layout 확인
 - [ ] 재사용 자산 호환성과 verified lineage 확인
+- [ ] derived overlay parent SHA / stale dependency 확인
 - [ ] 압축 descriptor/span 확인
 - [ ] archive entry/order 확인
 - [ ] LBA/FST/physical layout 확인
 - [ ] readback hash 확인
 - [ ] 보존 영역 hash 확인
+- [ ] 병렬 작업 시 canonical single-writer/global QA 확인
 - [ ] RC가 최신 source 기준인지 확인
 - [ ] runtime smoke 시 cold boot/save-state provenance 확인
 - [ ] canonical 승격 후 retail→canonical 패치 제작 및 decode 검증
