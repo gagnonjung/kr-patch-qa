@@ -13,9 +13,9 @@
 공통 규약의 원문은 다음 문서입니다.
 
 - [`LOCALIZATION_QA_STANDARD.md`](LOCALIZATION_QA_STANDARD.md)
-- 현재 표준: **v1.3 / 2026-08-25**
+- 현재 표준: **v1.5 / 2026-09-08**
 
-v1.3에는 최근 실제 작업에서 확인된 **coverage scope가 붙은 완료율, 병렬 번역 single-writer 통합, 화자 evidence provenance, 일본어 번역투 자연화, encoding-aware 잔존 일본어 감사, active glyph mapping 안정성, overlay parent-SHA 의존성, dynamic particle/unit QA**를 추가했습니다. v1.2의 decoded/raw-size, cold-boot/save-state, runtime-generated text, stale RC/retail→canonical 패치 규칙도 그대로 유지합니다.
+v1.5에는 **렌더러별 쉼표·마침표 뒤 공백 정책과 전 소비처 공통 줄임표 띄어쓰기 규칙**을 추가했습니다. v1.4에서는 최근 실제 작업에서 확인된 **숨은 fixed-offset 참조 보수 규칙, opcode arity/동적 치환 signature 검증, batch atomic merge, cumulative QA, PASS-only checkpoint**를 hard gate로 보강했습니다. v1.3 이하의 coverage scope, 화자 evidence provenance, encoding-aware 잔존 일본어 감사, active glyph mapping 안정성, decoded/raw-size, cold-boot/save-state, stale RC/retail→canonical 패치 규칙도 그대로 유지합니다.
 
 프로젝트별 규칙이 이 문서보다 더 엄격하면 **더 엄격한 프로젝트 규칙을 우선**합니다. 다만 원본 보존, 포인터/오프셋/크기, 글리프 커버리지, 압축/할당 스팬, 물리 레이아웃과 같은 런타임 안전 조건은 검증 근거 없이 완화하지 않습니다.
 
@@ -369,6 +369,7 @@ tools/register-codex-mcp.ps1
 
 | 플랫폼 | 게임 |
 |---|---|
+| Super Famicom | Tactics Ogre |
 | Dreamcast | Sonic Adventure 2 |
 | GameCube | Metal Gear Solid: The Twin Snakes |
 | PlayStation 2 | JoJo no Kimyou na Bouken: Ougon no Kaze |
@@ -376,6 +377,8 @@ tools/register-codex-mcp.ps1
 | PlayStation | Suzuki Bakuhatsu |
 | PlayStation | Getter Robo Daikessen! |
 | PlayStation | Persona 2: Innocent Sin |
+| PlayStation | Persona 2: Eternal Punishment |
+| PlayStation | Aura Battler Dunbine: Seisenshi Densetsu |
 | Nintendo 64 | The Legend of Zelda: Majora's Mask |
 
 이 목록은 해당 게임의 구현 세부를 다른 플랫폼에 그대로 적용한다는 의미가 아닙니다. 공통 규칙은 실제 저장·주소 지정·렌더링·런타임 소비 구조가 같은 경우에만 재사용하고, 플랫폼별 세부 검증은 해당 구조에 맞게 치환합니다.

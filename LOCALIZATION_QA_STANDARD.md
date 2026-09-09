@@ -1,13 +1,17 @@
 # Game Localization Common QA & Runtime Safety Standard
 
-Version: 1.3
-Updated: 2026-08-25
+Version: 1.5
+Updated: 2026-09-08
 Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 이 문서는 플랫폼·게임별 세부 규칙보다 상위에 두는 **공통 QA / 바이너리 안전 / 런타임 회귀 방지 규약**이다.
 각 프로젝트의 `HANDOFF.md`, `WORKLOG.md`, `.ai-bridge/current-plan.md`, 프로젝트별 `AGENTS.md`는 이 문서를 기본 규약으로 참조한다.
 
 프로젝트별로 명시된 규칙이 이 문서보다 더 엄격하면 프로젝트 규칙을 따른다. 다만 원본 보존, 포인터/오프셋/크기 안전성, 글리프 커버리지, 물리 레이아웃 검증과 같은 **런타임 안전 규칙은 명시적인 검증 근거 없이 완화하지 않는다.**
+
+**v1.5 주요 보강:** 모든 사용자 표시 텍스트 소비처(동영상/STR 자막, 일반 대사, 전투대사 포함)에 공통 적용되는 줄임표 띄어쓰기 규칙을 추가했다. 줄임표는 앞말에 붙이고, 같은 문장 안에서 뒤의 발화가 이어질 때는 뒤말과 한 칸 띄운다.
+
+**v1.4 주요 보강:** PS1 Getter Robo Daikessen! 및 Persona 2 Tsumi에서 확인된 런타임 회귀 사례와 Aura Battler Dunbine의 제어 프로토콜 분석을 반영해, 숨은 fixed-offset 참조 보수 규칙, opcode arity/동적 치환 signature 검증, batch atomic merge, cumulative QA, PASS-only checkpoint 규칙을 공통 hard gate로 추가했다.
 
 ---
 
@@ -181,7 +185,25 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 6. `?`, `!`, `…`, `...`는 발화 의도와 연출을 보존한다.
 7. 일본어의 `、`나 띄어쓰기를 한국어 쉼표로 기계적으로 복제하지 않는다.
-8. 감탄부호/물음표 다음에 새 한국어 구가 붙을 때는 적절한 공백, 개행 또는 문장 재구성을 적용한다.
+8. **쉼표(`,`)와 마침표(`.`) 뒤 띄어쓰기는 실제 렌더러의 공백 폭 정책에 따라 구분한다.**
+   - 반각 공백(U+0020)을 정상적으로 사용할 수 있는 소비처에서는 한국어 맞춤법에 따라 쉼표·마침표 뒤에 반각 한 칸을 둔다. 예: 동영상/STR 자막.
+   - 공백이 전각 셀로만 출력되거나 반각 공백이 문장 폭/정렬을 깨뜨리는 소비처에서는 쉼표·마침표 뒤에 별도 공백을 넣지 않는다. 예: 그러한 제약이 확인된 전투대사 렌더러.
+   - 이 차이는 번역 문체의 예외가 아니라 **렌더러별 레이아웃 예외**다. 프로젝트는 소비처별 `halfwidth-space supported / fullwidth-only` 정책을 명시하고 QA가 그 정책을 검사해야 한다.
+   - 반각 지원 소비처에서 일본어식으로 공백을 생략하거나, 전각 전용 소비처에서 억지로 공백을 넣지 않는다.
+9. 감탄부호/물음표 다음에 새 한국어 구가 붙을 때는 적절한 공백, 개행 또는 문장 재구성을 적용한다.
+10. **줄임표(`…`, `...`)는 앞말에 붙여 쓰는 것을 기본 원칙으로 한다.**
+   - `정말 …`처럼 앞말과 줄임표 사이를 띄우지 않는다.
+   - 제어코드나 스타일 코드가 사이에 있더라도 실제 화면에서 보이는 공백이 생기지 않게 검사한다.
+11. **한 문장 안에서 줄임표 뒤로 말이 계속 이어지면, 줄임표는 앞말에 붙이고 뒤의 이어지는 말과는 한 칸 띄운다.**
+   - 예: `거… 짓말?`, `여보… 세요?`
+   - `거 …짓말?`, `거…짓말?`처럼 앞을 띄우거나 뒤를 붙이는 형태는 기본적으로 허용하지 않는다.
+   - 문장 시작의 독립적인 `…`처럼 앞말 자체가 없는 연출은 이 규칙의 예외로 본다.
+12. **줄임표 규칙은 소비처를 가리지 않고 공통 적용한다.**
+   - 동영상/STR 자막
+   - 일반 대사·이벤트 대사
+   - 전투대사·전투 메시지
+   - 기타 사용자에게 표시되는 설명문/자막
+   - 고정 폭·바이트 예산 때문에 예외가 필요하면 자동 완화하지 말고, 명시적 review 예외와 런타임 근거를 남긴다.
 
 ### 4.2 띄어쓰기·형태소·조사
 
@@ -240,6 +262,34 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 
 4. 자동 줄바꿈은 후보 생성용이다. 최종 개행은 문맥과 실제 화면을 기준으로 승인한다.
 
+5. **프로젝트/게임마다 실제 텍스트 소비자별 표시 예산을 먼저 정의하고 QA 계약으로 고정한다.**
+   - 대사창, 선택지, 아이템 획득창, 아이템 설명/도움말, 시스템 팝업, 전투 메시지 등 서로 다른 소비자를 구분한다.
+   - 각 소비자에 대해 `max_width_px` 또는 셀 폭, `max_lines_per_page`, `max_pages`, 좌우 여백, 동적 치환 최대폭, 아이콘/버튼 소비 폭을 기록한다.
+   - 같은 게임이라도 창 종류에 따라 예산이 다르면 하나의 전역 글자 수 제한으로 대체하지 않는다.
+   - 실제 렌더러 폭을 알 수 없고 문자/셀 수만 알 수 있는 경우에는 그 한계를 명시하고 보수적인 안전 여유를 둔다.
+
+6. **번역 또는 용어 변경 후에는 모든 변경 메시지를 해당 소비자 예산으로 다시 검사한다.**
+   - 폭/줄 수/페이지 수 초과는 release-blocking failure로 취급한다.
+   - 한계에 매우 근접한 문장은 별도 warning으로 남기고 실제 화면 확인 우선순위를 높인다.
+   - 특히 아이템 획득 메시지와 아이템 설명/도움말은 고유명사 변경으로 쉽게 길어지므로 항상 별도 고위험군으로 재검사한다.
+
+7. **초과 문구 처리 순서**:
+   1. 의미 덩어리를 보존한 줄바꿈 재배치
+   2. 중복 표현/일본어식 군더더기 제거
+   3. 의미·말투를 유지하는 자연스러운 축약
+   4. 고유명사·호칭·수치·조작 정보·부정/긍정 의미를 훼손해야만 들어가는 경우에는 임의 축약하지 않고 사용자 결정 항목으로 보고
+   - `있다/없다`, `가능/불가능`, 수량, 버튼, 아이템명처럼 게임 플레이 의미가 바뀌는 정보는 폭을 맞추기 위해 생략하거나 뒤집지 않는다.
+   - 사용자 결정이 필요한 경우 원문, 현재 번역, 제안 축약안, 초과량(px/셀/줄)을 함께 제시한다.
+
+8. 각 프로젝트는 가능하면 레이아웃 검사 결과에 **소비자 종류와 예산 출처**를 남긴다. 예: `dialogue 256px×3 lines`, `item_help 256px×3 lines`, `choice 2 lines`. 새 게임을 시작할 때 예산이 확인되지 않았다면 이를 QA TODO로 명시하고, 임의의 공통 제한을 사실처럼 사용하지 않는다.
+
+9. **복제 원문/재사용 구절의 번역 일관성도 정적 QA 대상으로 취급한다.**
+   - 제어코드, 색상, 버튼 토큰, 줄바꿈, 페이지 구분처럼 의미를 바꾸지 않는 표시 토큰을 정규화한 뒤 동일한 원문 전체가 2곳 이상 존재하면 번역이 서로 다른지 검사한다.
+   - 메시지 전체가 다르더라도 동일한 원문 구절이 아이템 획득/아이템 설명, 메뉴/도움말, 반복 시스템 문구 등 여러 소비자에서 재사용되면 해당 구절의 한국어 번역 분기를 후보화한다.
+   - 동일 원문인데 한국어가 다르면 자동 오류로 단정하지 않고 화자, 문법 연결, 화면 폭, 기능 문맥 때문에 차이가 필요한지 사람이 판정한다. 이유가 없으면 하나의 표현으로 통일한다.
+   - 특히 아이템 획득 메시지와 아이템 설명/도움말처럼 기능적으로 짝이 명확한 경우에는 동일 원문 구절의 번역을 원칙적으로 통일한다. 소비자 폭 차이 때문에 축약이 필요하면 의미와 용어를 유지한 채 예외 사유를 기록한다.
+   - 이 검사는 용어사전 일치 검사와 별개다. 명사뿐 아니라 `들고 설치한다/들어 올려 설치한다`, `사용한다/쓴다`, `발사한다/발사`처럼 기능 문장 전체의 분기도 잡아야 한다.
+
 ### 5.1 보호 토큰과 제어코드
 
 번역문에 포함된 비텍스트 토큰은 일반 문자와 별도 계약으로 취급한다.
@@ -251,6 +301,18 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - 한국어 레이아웃 때문에 줄바꿈의 위치·개수를 의도적으로 바꿔야 한다면 **명시적 approved transform**으로 기록한다. 예: `OMIT/INSERT NEWLINE`, per-entry allowlist, stable ID 기반 break override.
 - 이런 예외는 컴파일러와 QA가 **같은 선언 데이터/규칙**을 읽어야 하며, 빌더만 허용하고 검증기는 원문 signature만 비교하는 식으로 계약이 갈라지면 안 된다.
 - 페이지 전환, delay, 음성/타이밍 경계는 단순 줄바꿈보다 강한 보호 토큰으로 취급하고, 별도 근거 없이 이동·삭제하지 않는다.
+
+### 5.2 미해명 제어 프로토콜 / 동적 치환
+
+텍스트 스트림에 opcode, parameter, inline term/name markup, runtime substitution이 섞여 있으면 보이는 문자만 추출해 번역을 시작하지 않는다.
+
+1. opcode 종류와 **arity(파라미터 개수)**를 실제 스트림 경계와 반복 패턴으로 규명한다.
+2. arity를 잘못 가정했을 때 parameter byte/word가 ASCII나 가짜 문자로 새어 나오는지 검사한다.
+3. inline 고유명사/용어가 제어 마크업으로 감싸져 있으면 literal text와 제어 ID/mode를 모두 canonical 원장에 보존한다.
+4. 플레이어 이름, 아이템명, 수치, 지명처럼 런타임에 삽입되는 값은 `{NAME}`, `{ITEM}`, stable opcode placeholder 등 **구조 식별자가 보존되는 표현**으로 원장에 남긴다.
+5. 번역 전후에 보호 토큰의 종류·순서·개수뿐 아니라 필요한 경우 **ID, mode, parameter signature**까지 동일한지 hard gate로 비교한다.
+6. 동적 치환의 정확한 의미가 아직 확정되지 않았더라도 서로 다른 opcode/field를 하나의 generic placeholder로 합치지 않는다. 의미가 풀릴 때까지 식별자를 보존한다.
+7. extractor 규칙을 고친 뒤에는 이전 검증 모집단이 새 추출 결과에 100% 포함되는지 또는 stable ID로 정확히 migration되는지 역검증한다. 누락이 있으면 번역을 계속하지 않는다.
 
 ---
 
@@ -368,6 +430,17 @@ Scope: 레트로 게임 한국어 패치/한글화 프로젝트 전반
 - checksum이 존재하면 checksum
 
 한 항목의 길이가 변했는데 뒤 항목 포인터가 그대로면 프리징/크래시 가능성이 매우 높다.
+
+### 8.3.1 숨은 고정 오프셋 / 외부 참조 보수 규칙
+
+명시적인 offset table이 보이지 않는다고 해서 sub-entry를 자유롭게 재배치할 수 있다고 판단하지 않는다.
+
+- 런타임이 원본 sub offset, 고정 slot 시작점, 별도 생성 테이블, 실행 코드 내 상수/파생 주소를 사용할 수 있다.
+- 번역 repack 후 내부 sub offset이 이동했는데 런타임이 원본 주소를 계속 참조하는 사례가 확인되면, 단순 pointer search 실패를 relocation 허용 근거로 사용하지 않는다.
+- 모든 외부 참조를 완전히 규명하지 못했다면 **원본 sub offset / slot boundary / file size를 유지하는 fixed-offset rebuild를 우선**한다.
+- fixed-offset rebuild는 각 sub-entry의 시작 offset, 종료 capacity, 원본 alignment, 전체 파일 크기를 전수 비교하고 mismatch 0을 hard gate로 둔다.
+- 압축 포맷에서는 fixed offset을 유지하기 위해 exact-fit 또는 보수적 재압축을 사용할 수 있으나, 의미 있는 제어코드·선택지·동적 치환을 삭제해 맞추지 않는다.
+- 특정 레코드만 예외적 축약/레이아웃 보정이 필요하면 canonical 번역 전체를 바꾸지 말고 stable physical-record ID 기반 override로 분리하고, 동일 원문의 다른 소비처에는 자동 전파하지 않는다.
 
 ## 8.4 압축 데이터
 
@@ -667,6 +740,21 @@ translation table에 모든 사용자 표시 문자열이 존재한다고 가정
 
 이 구조는 번역 속도를 높이기 위한 것이지 canonical ownership과 검증 책임을 분산시키기 위한 것이 아니다.
 
+### 12.2 단계/배치 hard gate와 체크포인트
+
+대규모 번역·QA는 오류 격리를 위해 작은 배치 또는 명확한 구조 단계로 나눈다.
+
+- 권장 단위는 프로젝트 규모에 맞춘 stable-ID 범위, scene/file 단위, 또는 50~250개 canonical group 정도다. 숫자 자체보다 **원인 추적 가능한 경계**가 중요하다.
+- 각 배치는 `draft/review → batch QA → canonical merge → cumulative QA → checkpoint` 순으로 진행한다.
+- **batch QA가 FAIL이면 canonical workset을 수정하지 않는다.** validator는 가능하면 구조 오류, token mismatch, line mismatch, overflow가 0일 때만 atomic merge한다.
+- extractor/re-extractor의 기본 출력은 canonical 번역 원장이 아닌 별도 analysis/staging 경로로 둔다. canonical 덮어쓰기는 stable-ID migration과 전수 QA가 준비된 명시적 모드에서만 허용한다.
+- FAIL 상태에서 checkpoint를 만들지 않는다. 수정 후 같은 검증을 다시 실행해 PASS한 결과만 checkpoint로 잠근다.
+- batch PASS 후에도 이전 PASS 범위를 포함한 cumulative/global QA를 주기적으로 다시 실행해 과거 번역이 새 용어·codebook·builder 변경으로 회귀하지 않았는지 검사한다.
+- checkpoint에는 최소한 stable ID 범위, 처리/병합 수, overflow, token/control mismatch, pointer/offset/readback 상태, 현재 PASS의 범위(`SOURCE`, `STATIC_BINARY`, `RUNTIME`)를 기록한다.
+- 구조가 불명확한 레코드는 억지로 `TRANSLATED` 처리하지 않고 `STRUCTURE_HOLD`, `UNRESOLVED_RUNTIME`, `EXCLUDED_INTERNAL_DEBUG` 등으로 분리해 TODO와 구별한다.
+- `HOLD/EXCLUDED`는 완료율을 숨기는 수단이 아니다. 수량, 근거, 해제 조건을 보고서에 기록한다.
+- 다음 단계에서 extractor, codebook, font mapping, pointer/layout 규칙이 바뀌면 해당 변경의 영향 범위를 계산하고 필요한 이전 checkpoint부터 재검증한다.
+
 ### RC와 canonical 구분
 
 - RC는 테스트용이다.
@@ -830,9 +918,13 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 - 한국어 문장부호/조사/띄어쓰기/줄바꿈 및 일본어 번역투 자연화 QA PASS
 - 화면 폭 overflow 0
 - byte/block overflow 0
+- 보호 토큰 및 필요한 ID/mode/parameter signature mismatch 0
+- 구조 HOLD/런타임 미해명/excluded 항목의 수량·근거·해제 조건이 명시됨
+- batch QA 및 누적/global QA PASS, FAIL 배치의 canonical 오염 0
 - missing glyph 0 및 의도하지 않은 active code→glyph mapping 변화 0
 - 잔존 일본어 스캐너의 unresolved finding 0
 - 포인터/오프셋/크기 및 decoded/raw-size 계약 검증 PASS
+- fixed-offset 구조가 필요한 소비처는 sub-entry offset/slot/file-size mismatch 0
 - 압축/아카이브 무결성 PASS
 - derived overlay/base lineage가 최신 source 기준이며 stale dependency 0
 - 물리 layout overlap/out-of-range 0
@@ -859,11 +951,15 @@ SNES, Mega Drive/Genesis, Game Boy/GBC, Game Gear, NES 등에서는 해당 게�
 - [ ] 일본어 번역투 자연화 후보 수동 판정
 - [ ] 다어절 고유명사 줄바꿈 보호 확인
 - [ ] approved newline/control transform 확인
+- [ ] opcode arity / 보호 토큰 ID·mode·parameter signature 확인
 - [ ] runtime-generated/hardcoded text 및 동적 조사/단위 확인
+- [ ] STRUCTURE_HOLD / UNRESOLVED_RUNTIME / EXCLUDED 항목의 근거·해제 조건 확인
+- [ ] batch FAIL 시 canonical 미변경 / PASS 후 cumulative QA 확인
 - [ ] 실제 렌더러 폭 확인
 - [ ] encoded byte budget 확인
 - [ ] record/block alignment 및 실제 physical window 확인
 - [ ] pointer/offset/size 확인
+- [ ] 숨은 외부 참조 가능 시 fixed sub-offset/slot/file-size 보존 확인
 - [ ] decoded/raw size 및 raw/packed descriptor 확인
 - [ ] 글리프 plan / 실제 슬롯 / active mapping diff 확인
 - [ ] 잔존 일본어 후보를 실제 runtime codec으로 재판정
